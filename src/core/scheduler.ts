@@ -198,6 +198,9 @@ export class Scheduler {
     };
     await appendHistory(entry);
 
+    // Save prompt + response to log
+    await logger.response(task.name, resolvedPrompt, result.output ?? result.error ?? '');
+
     if (result.rateLimited) {
       await logger.info(`FAIL  ${task.name} — RATE_LIMITED`);
       await this.windowTracker.markRateLimited();

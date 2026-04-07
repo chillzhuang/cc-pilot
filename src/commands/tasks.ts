@@ -210,6 +210,10 @@ export async function tasksTestCommand(): Promise<void> {
     `  ${statusText}  ${T.dim(`${duration}s`)}  ${T.dim(`${((result.tokens ?? 0) / 1000).toFixed(1)}k tokens`)}`,
   ]));
 
+  // Save prompt + response to log
+  const { logger } = await import('../utils/logger.js');
+  await logger.response(taskName, prompt, result.output ?? result.error ?? '');
+
   // Record
   await appendHistory({
     task: taskName,

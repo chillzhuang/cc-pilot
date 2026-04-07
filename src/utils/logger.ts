@@ -56,6 +56,22 @@ export class Logger {
     const line = `${ts} \u25B8 EXEC  task=${taskName} status=${status} duration=${duration}ms${tokensStr}\n`;
     await appendFile(this.logFile(), line, 'utf-8');
   }
+
+  async response(taskName: string, prompt: string, output: string): Promise<void> {
+    await this.ensureDir();
+    const ts = dayjs().format('HH:mm:ss');
+    const sep = '─'.repeat(40);
+    const lines = [
+      `${ts} ▸ RESP  task=${taskName}`,
+      `${sep} PROMPT ${sep}`,
+      prompt,
+      `${sep} RESPONSE ${sep}`,
+      output,
+      `${sep}${'─'.repeat(36)}`,
+      '',
+    ].join('\n');
+    await appendFile(this.logFile(), lines + '\n', 'utf-8');
+  }
 }
 
 export const logger = new Logger(LOG_DIR);
