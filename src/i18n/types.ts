@@ -64,12 +64,10 @@ export interface TranslationSchema {
     aboutDesc: string;
 
     // About page content
-    aboutAuthor: string;
-    aboutWebsite: string;
     aboutBlade: string;
     aboutBladeAI: string;
-    aboutBladeIoT: string;
-    aboutBladeScreen: string;
+    aboutBladeLinks: string;
+    aboutBladeData: string;
 
     input: string;
     enterReturn: string;

@@ -16,10 +16,10 @@ export async function aboutCommand(): Promise<void> {
     `${T.bold('Claude Code Auto Pilot')}`,
     `${T.dim('Cyberpunk-styled intelligent conversation scheduler')}`,
     '',
-    `${T.dim(t('menu.aboutAuthor'))}   ${T.value('BladeX')} ${T.dim('(bladejava@qq.com)')}`,
-    `${T.dim(t('menu.aboutWebsite'))}   ${T.value('https://sns.bladex.cn')}`,
-    `${T.dim('GitHub')}   ${T.value('https://github.com/chillzhuang/cc-pilot')}`,
-    `${T.dim('npm')}      ${T.value('@springblade/cc-pilot')}`,
+    `${T.dim('Author'.padEnd(10))}${T.value('BladeX')} ${T.dim('(bladejava@qq.com)')}`,
+    `${T.dim('Website'.padEnd(10))}${T.value('https://bladex.cn')}`,
+    `${T.dim('GitHub'.padEnd(10))}${T.value('https://github.com/chillzhuang/cc-pilot')}`,
+    `${T.dim('npm'.padEnd(10))}${T.value('@springblade/cc-pilot')}`,
   ]));
 
   console.log('');
@@ -31,11 +31,11 @@ export async function aboutCommand(): Promise<void> {
     `${T.primary(T.bullet)} ${T.bold('BladeX AI')}`,
     `  ${T.text(t('menu.aboutBladeAI'))}`,
     '',
-    `${T.primary(T.bullet)} ${T.bold('BladeX IoT')}`,
-    `  ${T.text(t('menu.aboutBladeIoT'))}`,
+    `${T.primary(T.bullet)} ${T.bold('BladeX Links')}`,
+    `  ${T.text(t('menu.aboutBladeLinks'))}`,
     '',
-    `${T.primary(T.bullet)} ${T.bold('BladeX DataScreen')}`,
-    `  ${T.text(t('menu.aboutBladeScreen'))}`,
+    `${T.primary(T.bullet)} ${T.bold('BladeX Data')}`,
+    `  ${T.text(t('menu.aboutBladeData'))}`,
   ]));
 
   console.log('');

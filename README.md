@@ -151,6 +151,7 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
   [L] LANG   ── EN | 中文 | РУС | DE | FR
   [T] THEME  ── mono | neon | matrix | classic | vapor
+  [X] ABOUT  ── Author & project info
 
   ░▒▓ INPUT ▓▒░
 ```
