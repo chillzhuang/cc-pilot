@@ -207,6 +207,8 @@ export interface TranslationSchema {
     tokenSaved: string;
     enabled: string;
     disabled: string;
+    enableAction: string;
+    disableAction: string;
     testSending: string;
     testSuccess: string;
     testFail: string;

@@ -205,6 +205,8 @@ const fr: TranslationSchema = {
     tokenSaved: 'Token sauvegardé',
     enabled: 'Notifications activées',
     disabled: 'Notifications désactivées',
+    enableAction: 'Activer les notifications',
+    disableAction: 'Désactiver les notifications',
     testSending: 'Envoi de la notification de test...',
     testSuccess: 'Notification de test envoyée avec succès',
     testFail: 'Échec de la notification de test',

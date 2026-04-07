@@ -141,16 +141,16 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
   [10] LOG  ── Live execution stream
   [11] HISTORY  ── Task execution records
   [12] WINDOW  ── Window state monitor
-  ▸ SYS_CONFIG ───────────────────────────────────
-  [13] INIT  ── Initialize configuration
-  [14] CONFIG  ── Edit config matrix
-  [15] INSTALL  ── Register auto-boot
-  [16] UNINSTALL  ── Remove auto-boot
-  [17] EXIT  ── Keep daemon running and exit
-  [18] SHUTDOWN  ── Stop daemon and exit
   ▸ NOTIFY ───────────────────────────────────
-  [19] DINGTALK  ── DingTalk notification settings
-  [20] FEISHU  ── Feishu notification settings
+  [13] DINGTALK  ── DingTalk notification settings
+  [14] FEISHU  ── Feishu notification settings
+  ▸ SYS_CONFIG ───────────────────────────────────
+  [15] INIT  ── Initialize configuration
+  [16] CONFIG  ── Edit config matrix
+  [17] INSTALL  ── Register auto-boot
+  [18] UNINSTALL  ── Remove auto-boot
+  [19] EXIT  ── Keep daemon running and exit
+  [20] SHUTDOWN  ── Stop daemon and exit
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
   [L] LANG   ── EN | 中文 | РУС | DE | FR
@@ -436,8 +436,8 @@ Configure via the interactive menu:
 
 ```
 ▸ NOTIFY ───────────────────────────────────
-[19] DINGTALK  ── DingTalk notification settings
-[20] FEISHU   ── Feishu notification settings
+[13] DINGTALK  ── DingTalk notification settings
+[14] FEISHU   ── Feishu notification settings
 ```
 
 Each channel provides:

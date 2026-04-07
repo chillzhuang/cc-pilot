@@ -53,7 +53,7 @@ export async function dingtalkCommand(): Promise<void> {
     console.log('');
 
     // Dynamic toggle label based on current state
-    const toggleLabel = dk.enabled ? t('notify.disabled') : t('notify.enabled');
+    const toggleLabel = dk.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
     const { action } = await inquirer.prompt([{
       type: 'list',
@@ -142,7 +142,7 @@ export async function feishuCommand(): Promise<void> {
     ]));
     console.log('');
 
-    const toggleLabel = fs.enabled ? t('notify.disabled') : t('notify.enabled');
+    const toggleLabel = fs.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
     const { action } = await inquirer.prompt([{
       type: 'list',

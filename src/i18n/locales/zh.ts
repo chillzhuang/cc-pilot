@@ -205,6 +205,8 @@ const zh: TranslationSchema = {
     tokenSaved: 'Token 已保存',
     enabled: '通知已开启',
     disabled: '通知已关闭',
+    enableAction: '通知开启',
+    disableAction: '通知关闭',
     testSending: '正在发送测试通知...',
     testSuccess: '测试通知发送成功',
     testFail: '测试通知发送失败',

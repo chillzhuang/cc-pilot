@@ -92,16 +92,16 @@ function renderMenu(): string {
   lines.push(renderMenuItem(10, t('menu.log'), t('menu.logDesc')));
   lines.push(renderMenuItem(11, t('menu.history'), t('menu.historyDesc')));
   lines.push(renderMenuItem(12, t('menu.window'), t('menu.windowDesc')));
-  lines.push(renderCategory(t('menu.sysConfig')));
-  lines.push(renderMenuItem(13, t('menu.init'), t('menu.initDesc')));
-  lines.push(renderMenuItem(14, t('menu.config'), t('menu.configDesc')));
-  lines.push(renderMenuItem(15, t('menu.install'), t('menu.installDesc')));
-  lines.push(renderMenuItem(16, t('menu.uninstall'), t('menu.uninstallDesc')));
-  lines.push(renderMenuItem(17, t('menu.exit'), t('menu.exitDesc')));
-  lines.push(renderMenuItem(18, t('menu.shutdown'), t('menu.shutdownDesc')));
   lines.push(renderCategory(t('menu.notify')));
-  lines.push(renderMenuItem(19, t('menu.dingtalk'), t('menu.dingtalkDesc')));
-  lines.push(renderMenuItem(20, t('menu.feishu'), t('menu.feishuDesc')));
+  lines.push(renderMenuItem(13, t('menu.dingtalk'), t('menu.dingtalkDesc')));
+  lines.push(renderMenuItem(14, t('menu.feishu'), t('menu.feishuDesc')));
+  lines.push(renderCategory(t('menu.sysConfig')));
+  lines.push(renderMenuItem(15, t('menu.init'), t('menu.initDesc')));
+  lines.push(renderMenuItem(16, t('menu.config'), t('menu.configDesc')));
+  lines.push(renderMenuItem(17, t('menu.install'), t('menu.installDesc')));
+  lines.push(renderMenuItem(18, t('menu.uninstall'), t('menu.uninstallDesc')));
+  lines.push(renderMenuItem(19, t('menu.exit'), t('menu.exitDesc')));
+  lines.push(renderMenuItem(20, t('menu.shutdown'), t('menu.shutdownDesc')));
   lines.push('');
   lines.push(T.dim(`  ${T.separator.repeat(48)}`));
   lines.push(renderMenuItem('L', t('menu.lang'), t('menu.langDesc')));
@@ -130,22 +130,22 @@ async function handleInput(input: string): Promise<boolean> {
     '10': logCommand,
     '11': tasksHistoryCommand,
     '12': windowCommand,
-    '13': initCommand,
-    '14': async () => {
+    '13': dingtalkCommand,
+    '14': feishuCommand,
+    '15': initCommand,
+    '16': async () => {
       const { exec } = await import('node:child_process');
       const editor = process.env.EDITOR || 'vi';
       exec(`${editor} ~/.cc-pilot/config.yml`);
       console.log(T.dim(t('menu.openingConfig')));
     },
-    '15': installCommand,
-    '16': uninstallCommand,
-    '19': dingtalkCommand,
-    '20': feishuCommand,
+    '17': installCommand,
+    '18': uninstallCommand,
   };
 
-  if (cmd === '17' || cmd === 'exit') return false;
+  if (cmd === '19' || cmd === 'exit') return false;
 
-  if (cmd === '18' || cmd === 'shutdown') {
+  if (cmd === '20' || cmd === 'shutdown') {
     if (await isDaemonRunningAsync()) {
       try {
         const { stopDaemon } = await import('./core/daemon.js');
