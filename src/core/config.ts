@@ -21,6 +21,11 @@ const DEFAULT_GLOBAL: GlobalConfig = {
   promptPool: [],
 };
 
+const DEFAULT_NOTIFY = {
+  dingtalk: { token: '', enabled: false },
+  feishu: { token: '', enabled: false },
+};
+
 function normalizeTask(raw: Record<string, unknown>): Task {
   const base = {
     name: raw.name as string,
@@ -71,6 +76,9 @@ export async function loadConfig(): Promise<Config> {
   }
   const raw = parse(await readFile(CONFIG_PATH, 'utf-8')) as Record<string, unknown>;
   const globalRaw = (raw.global ?? {}) as Record<string, unknown>;
+  const notifyRaw = (raw.notify ?? {}) as Record<string, unknown>;
+  const dingtalkRaw = (notifyRaw.dingtalk ?? {}) as Record<string, unknown>;
+  const feishuRaw = (notifyRaw.feishu ?? {}) as Record<string, unknown>;
 
   return {
     global: {
@@ -83,6 +91,16 @@ export async function loadConfig(): Promise<Config> {
       uiSize: (globalRaw.ui_size ?? globalRaw.uiSize ?? DEFAULT_GLOBAL.uiSize) as UISize,
       theme: (globalRaw.theme ?? DEFAULT_GLOBAL.theme) as ThemeName,
       promptPool: (globalRaw.prompt_pool ?? globalRaw.promptPool ?? DEFAULT_GLOBAL.promptPool) as string[],
+    },
+    notify: {
+      dingtalk: {
+        token: (dingtalkRaw.token ?? DEFAULT_NOTIFY.dingtalk.token) as string,
+        enabled: (dingtalkRaw.enabled ?? DEFAULT_NOTIFY.dingtalk.enabled) as boolean,
+      },
+      feishu: {
+        token: (feishuRaw.token ?? DEFAULT_NOTIFY.feishu.token) as string,
+        enabled: (feishuRaw.enabled ?? DEFAULT_NOTIFY.feishu.enabled) as boolean,
+      },
     },
     tasks: ((raw.tasks ?? []) as Record<string, unknown>[]).map(normalizeTask),
   };
@@ -101,6 +119,16 @@ export async function saveConfig(config: Config): Promise<void> {
       ui_size: config.global.uiSize,
       theme: config.global.theme,
       prompt_pool: config.global.promptPool.length > 0 ? config.global.promptPool : undefined,
+    },
+    notify: {
+      dingtalk: {
+        token: config.notify.dingtalk.token || undefined,
+        enabled: config.notify.dingtalk.enabled,
+      },
+      feishu: {
+        token: config.notify.feishu.token || undefined,
+        enabled: config.notify.feishu.enabled,
+      },
     },
     tasks: config.tasks.map(taskToYaml),
   };
@@ -143,4 +171,4 @@ export function configExists(): boolean {
   return existsSync(CONFIG_PATH);
 }
 
-export { DEFAULT_GLOBAL };
+export { DEFAULT_GLOBAL, DEFAULT_NOTIFY };

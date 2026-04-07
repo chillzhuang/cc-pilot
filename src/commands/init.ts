@@ -142,7 +142,7 @@ export async function firstRunSetup(): Promise<void> {
 
   // Show default tasks and ask if user wants them
   console.log('');
-  console.log(renderSection('▸ DEFAULT TASKS', [
+  console.log(renderSection(`▸ ${t('init.defaultTasks')}`, [
     '',
     `  ${T.success('●')} ${T.accent('morning-activate')}   ── 07:00-08:00 ${T.dim('random daily')}`,
     T.dim('    prompt: (random from 100 built-in light prompts)'),
@@ -168,14 +168,35 @@ export async function firstRunSetup(): Promise<void> {
   if (useDefaults) {
     tasks = [...DEFAULT_TASKS];
 
-    // Ask for working directory for default tasks
+    // Ask for default working directory with current dir hint
+    const currentDir = process.cwd();
     const { cwd } = await inquirer.prompt([{
       type: 'input',
       name: 'cwd',
-      message: t('init.taskCwd') + ' (for all default tasks)',
+      message: `${t('init.taskCwdAll')} ${T.dim(`(${t('init.currentDir')}: ${currentDir})`)}`,
       default: '.',
     }]);
     tasks = tasks.map(task => ({ ...task, cwd }));
+
+    // Ask if user wants different directories per task
+    const { customizeCwd } = await inquirer.prompt([{
+      type: 'confirm',
+      name: 'customizeCwd',
+      message: t('init.taskCwdCustomize'),
+      default: false,
+    }]);
+
+    if (customizeCwd) {
+      for (const task of tasks) {
+        const { taskCwd } = await inquirer.prompt([{
+          type: 'input',
+          name: 'taskCwd',
+          message: `  ${T.accent(task.name)} ${t('init.taskCwd')}`,
+          default: cwd,
+        }]);
+        task.cwd = taskCwd;
+      }
+    }
 
     // Ask if user wants to customize prompts
     const { customize } = await inquirer.prompt([{
@@ -234,18 +255,22 @@ export async function firstRunSetup(): Promise<void> {
       language: language as Locale,
       promptPool: [],
     },
+    notify: {
+      dingtalk: { token: '', enabled: false },
+      feishu: { token: '', enabled: false },
+    },
     tasks,
   };
 
   await saveConfig(config);
 
   console.log('');
-  console.log(renderSection('▸ SETUP COMPLETE', [
+  console.log(renderSection(`▸ ${t('init.setupComplete')}`, [
     '',
-    T.success('  ✓ Configuration saved to ~/.cc-pilot/config.yml'),
-    T.dim(`  ✓ ${tasks.length} tasks configured`),
+    T.success(`  ✓ ${t('init.configSaved')}`),
+    T.dim(`  ✓ ${tasks.length} ${t('init.tasksConfigured')}`),
     '',
-    T.dim('  Tip: Use [7] START in menu to launch the scheduler'),
+    T.dim(`  ${t('init.tipStart')}`),
     '',
   ]));
   console.log('');
@@ -289,10 +314,11 @@ async function promptTask(): Promise<Task> {
     ],
   }]);
 
+  const currentDir = process.cwd();
   const { cwd } = await inquirer.prompt([{
     type: 'input',
     name: 'cwd',
-    message: t('init.taskCwd'),
+    message: `${t('init.taskCwd')} ${T.dim(`(${t('init.currentDir')}: ${currentDir})`)}`,
     default: '.',
   }]);
 

@@ -15,6 +15,7 @@ import { t } from '../i18n/index.js';
 import { formatDuration, formatTime } from '../utils/time.js';
 import ora from 'ora';
 import dayjs from 'dayjs';
+import { notifyTaskExecution } from '../core/notify.js';
 import type { Task, HistoryEntry } from '../types.js';
 
 // ─── List ────────────────────────────────────────────────
@@ -223,6 +224,9 @@ export async function tasksTestCommand(): Promise<void> {
     tokens: result.tokens ?? 0,
   });
   if (result.success) await recordExecution(taskName, result.tokens ?? 0);
+
+  // Notify all channels
+  await notifyTaskExecution(config, taskName, prompt, result);
 }
 
 // ─── History ─────────────────────────────────────────────

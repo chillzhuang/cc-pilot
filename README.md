@@ -26,6 +26,7 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 - **Model Selection** — Choose your Claude model (`claude_model` config field, passed via `--model`)
 - **i18n** — English, 中文, Русский, Deutsch, Français
 - **Daemon Process** — Background scheduling with system service registration
+- **Notifications** — DingTalk & Feishu webhook notifications on every task execution (success, error, rate-limited)
 - **Execution History & Logs** — Daily rolling logs, per-task history tracking
 
 ---
@@ -147,6 +148,9 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
   [16] UNINSTALL  ── Remove auto-boot
   [17] EXIT  ── Keep daemon running and exit
   [18] SHUTDOWN  ── Stop daemon and exit
+  ▸ NOTIFY ───────────────────────────────────
+  [19] DINGTALK  ── DingTalk notification settings
+  [20] FEISHU  ── Feishu notification settings
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
   [L] LANG   ── EN | 中文 | РУС | DE | FR
@@ -421,6 +425,47 @@ CC-PILOT ships with 5 built-in themes, selectable during the init wizard or by e
 global:
   theme: mono    # neon | mono | matrix | classic | vapor
 ```
+
+---
+
+## Notifications
+
+CC-PILOT supports webhook notifications via **DingTalk** and **Feishu**. Notifications are sent on every task execution — success, error, and rate-limited — for both manual test (`[6] TEST`) and automated scheduling.
+
+Configure via the interactive menu:
+
+```
+▸ NOTIFY ───────────────────────────────────
+[19] DINGTALK  ── DingTalk notification settings
+[20] FEISHU   ── Feishu notification settings
+```
+
+Each channel provides:
+- **Set Token** — Enter your DingTalk Robot Token or Feishu Bot Hook ID
+- **Enable/Disable** — Toggle notifications on/off
+- **Send Test** — Send a test message without calling Claude
+
+### Configuration
+
+```yaml
+notify:
+  dingtalk:
+    token: "your-dingtalk-robot-token"
+    enabled: true
+  feishu:
+    token: "your-feishu-bot-hook-id"
+    enabled: true
+```
+
+### Notification Content
+
+Each notification includes: task name, prompt, execution time, model, duration, token count, and Claude's full response (truncated at 2000 chars). The message header reflects the execution result:
+
+| Status | DingTalk | Feishu |
+|--------|----------|--------|
+| Success | ✅ CC-PILOT · Task Complete | ✅ CC-PILOT · Task Complete |
+| Error | ❌ CC-PILOT · Task Failed | ❌ CC-PILOT · Task Failed |
+| Rate Limited | ⚠️ CC-PILOT · Rate Limited | ⚠️ CC-PILOT · Rate Limited |
 
 ---
 

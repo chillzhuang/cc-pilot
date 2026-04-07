@@ -28,6 +28,7 @@ import { logCommand } from './commands/log.js';
 import { windowCommand } from './commands/window.js';
 import { installCommand, uninstallCommand } from './commands/install.js';
 import { aboutCommand } from './commands/about.js';
+import { dingtalkCommand, feishuCommand } from './commands/notify.js';
 
 // ─── Readline helper ─────────────────────────────────────
 
@@ -98,6 +99,9 @@ function renderMenu(): string {
   lines.push(renderMenuItem(16, t('menu.uninstall'), t('menu.uninstallDesc')));
   lines.push(renderMenuItem(17, t('menu.exit'), t('menu.exitDesc')));
   lines.push(renderMenuItem(18, t('menu.shutdown'), t('menu.shutdownDesc')));
+  lines.push(renderCategory(t('menu.notify')));
+  lines.push(renderMenuItem(19, t('menu.dingtalk'), t('menu.dingtalkDesc')));
+  lines.push(renderMenuItem(20, t('menu.feishu'), t('menu.feishuDesc')));
   lines.push('');
   lines.push(T.dim(`  ${T.separator.repeat(48)}`));
   lines.push(renderMenuItem('L', t('menu.lang'), t('menu.langDesc')));
@@ -135,6 +139,8 @@ async function handleInput(input: string): Promise<boolean> {
     },
     '15': installCommand,
     '16': uninstallCommand,
+    '19': dingtalkCommand,
+    '20': feishuCommand,
   };
 
   if (cmd === '17' || cmd === 'exit') return false;
@@ -203,7 +209,7 @@ async function handleLangSwitch(): Promise<void> {
     config.global.language = lang as Locale;
     await saveConfig(config);
   } else {
-    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: lang as Locale }, tasks: [] });
+    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: lang as Locale }, notify: { dingtalk: { token: '', enabled: false }, feishu: { token: '', enabled: false } }, tasks: [] });
   }
 }
 

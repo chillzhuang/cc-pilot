@@ -53,8 +53,24 @@ export interface GlobalConfig {
   promptPool: string[];
 }
 
+export interface DingtalkConfig {
+  token: string;
+  enabled: boolean;
+}
+
+export interface FeishuConfig {
+  token: string;
+  enabled: boolean;
+}
+
+export interface NotifyConfig {
+  dingtalk: DingtalkConfig;
+  feishu: FeishuConfig;
+}
+
 export interface Config {
   global: GlobalConfig;
+  notify: NotifyConfig;
   tasks: Task[];
 }
 

@@ -20,6 +20,7 @@ import {
   nextDayMatch,
 } from '../utils/time.js';
 import { logger } from '../utils/logger.js';
+import { notifyTaskExecution } from './notify.js';
 import type { Config, Task, FixedTask, RandomTask, WindowTask, HistoryEntry } from '../types.js';
 
 export class Scheduler {
@@ -211,6 +212,9 @@ export class Scheduler {
     } else {
       await logger.error(`FAIL  ${task.name} — ${result.error}`);
     }
+
+    // Notify all channels on every execution (success, error, rate_limited)
+    await notifyTaskExecution(this.config, task.name, resolvedPrompt, result);
   }
 
   private rescheduleRandomTasks(): void {

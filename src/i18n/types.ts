@@ -62,6 +62,11 @@ export interface TranslationSchema {
     themeDesc: string;
     about: string;
     aboutDesc: string;
+    notify: string;
+    dingtalk: string;
+    dingtalkDesc: string;
+    feishu: string;
+    feishuDesc: string;
 
     // About page content
     aboutBlade: string;
@@ -166,9 +171,17 @@ export interface TranslationSchema {
     taskPrompt: string;
     taskPrompts: string;
     taskCwd: string;
+    taskCwdAll: string;
+    taskCwdCustomize: string;
+    currentDir: string;
     addAnother: string;
     startDaemon: string;
     complete: string;
+    defaultTasks: string;
+    setupComplete: string;
+    configSaved: string;
+    tasksConfigured: string;
+    tipStart: string;
   };
 
   errors: {
@@ -179,6 +192,27 @@ export interface TranslationSchema {
     invalidConfig: string;
     rateLimited: string;
     claudeNotFound: string;
+  };
+
+  notify: {
+    configTitle: string;
+    status: string;
+    tokenSet: string;
+    tokenNotSet: string;
+    actionSelect: string;
+    setToken: string;
+    toggle: string;
+    sendTest: string;
+    tokenPrompt: string;
+    tokenSaved: string;
+    enabled: string;
+    disabled: string;
+    testSending: string;
+    testSuccess: string;
+    testFail: string;
+    notConfigured: string;
+    feishuConfigTitle: string;
+    feishuTokenPrompt: string;
   };
 
   common: {
