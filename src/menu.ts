@@ -27,6 +27,7 @@ import { tasksListCommand, tasksAddCommand, tasksEditCommand, tasksRemoveCommand
 import { logCommand } from './commands/log.js';
 import { windowCommand } from './commands/window.js';
 import { installCommand, uninstallCommand } from './commands/install.js';
+import { aboutCommand } from './commands/about.js';
 
 // ─── Readline helper ─────────────────────────────────────
 
@@ -101,6 +102,7 @@ function renderMenu(): string {
   lines.push(T.dim(`  ${T.separator.repeat(48)}`));
   lines.push(renderMenuItem('L', t('menu.lang'), t('menu.langDesc')));
   lines.push(renderMenuItem('T', t('menu.theme'), t('menu.themeDesc')));
+  lines.push(renderMenuItem('X', t('menu.about'), t('menu.aboutDesc')));
   lines.push('');
 
   return lines.join('\n');
@@ -155,6 +157,11 @@ async function handleInput(input: string): Promise<boolean> {
 
   if (cmd === 't' || cmd === 'theme') {
     await handleThemeSwitch();
+    return true;
+  }
+
+  if (cmd === 'x' || cmd === 'about') {
+    await aboutCommand();
     return true;
   }
 

@@ -60,6 +60,16 @@ export interface TranslationSchema {
     langDesc: string;
     theme: string;
     themeDesc: string;
+    about: string;
+    aboutDesc: string;
+
+    // About page content
+    aboutAuthor: string;
+    aboutWebsite: string;
+    aboutBlade: string;
+    aboutBladeAI: string;
+    aboutBladeIoT: string;
+    aboutBladeScreen: string;
 
     input: string;
     enterReturn: string;

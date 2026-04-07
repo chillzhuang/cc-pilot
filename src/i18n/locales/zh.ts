@@ -14,7 +14,7 @@ const zh: TranslationSchema = {
   menu: {
     taskCtrl: '任务控制',
     daemon: '守护进程',
-    dataStream: '数据流',
+    dataStream: '数据流程',
     sysConfig: '系统配置',
 
     list: '列表',
@@ -43,7 +43,7 @@ const zh: TranslationSchema = {
     window: '窗口',
     windowDesc: '窗口状态监控',
 
-    init: '初始化',
+    init: '初始',
     initDesc: '初始化配置',
     config: '配置',
     configDesc: '编辑配置矩阵',
@@ -60,6 +60,14 @@ const zh: TranslationSchema = {
     langDesc: 'EN | 中文 | РУС | DE | FR',
     theme: '主题',
     themeDesc: 'mono | neon | matrix | classic | vapor',
+    about: '关于',
+    aboutDesc: '作者与项目信息',
+    aboutAuthor: '作者',
+    aboutWebsite: '官网',
+    aboutBlade: '企业级微服务架构，提供 SpringCloud 全套解决方案，荣获开源中国年度最受欢迎 TOP30。',
+    aboutBladeAI: '企业级 AI 平台 — 大模型管理、智能体编排、知识库构建、向量检索、MCP 调用、多模态。',
+    aboutBladeIoT: '物联网平台 — 设备管理、数据采集、实时监控、MQTT/AMQP 桥接与数据订阅。',
+    aboutBladeScreen: '零代码数据大屏 — 拖拽式可视化设计，覆盖智能制造、城市运营、能源环境监控。',
 
     input: '输入',
     enterReturn: '按 ENTER 返回',
