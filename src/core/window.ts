@@ -19,12 +19,23 @@ export class WindowTracker {
     this.onWindowOpenCallbacks.push(cb);
   }
 
+  /**
+   * Floor time to the start of the current hour.
+   * e.g. 7:30 → 7:00, 12:20 → 12:00
+   */
+  private floorToHour(time: dayjs.Dayjs): dayjs.Dayjs {
+    return time.startOf('hour');
+  }
+
   async markCallExecuted(): Promise<void> {
     const state = await loadState();
-    if (!state.window.startedAt) {
-      const now = dayjs();
-      state.window.startedAt = now.toISOString();
-      state.window.endsAt = now.add(this.windowMs, 'millisecond').toISOString();
+    const now = dayjs();
+
+    // If no active window or window has expired, start a new one from the current hour
+    if (!state.window.startedAt || (state.window.endsAt && now.isAfter(dayjs(state.window.endsAt)))) {
+      const windowStart = this.floorToHour(now);
+      state.window.startedAt = windowStart.toISOString();
+      state.window.endsAt = windowStart.add(this.windowMs, 'millisecond').toISOString();
       state.window.callsThisWindow = 1;
     } else {
       state.window.callsThisWindow += 1;
@@ -35,9 +46,10 @@ export class WindowTracker {
   async markRateLimited(): Promise<void> {
     const state = await loadState();
     const now = dayjs();
-    const windowEnd = now.add(this.windowMs, 'millisecond');
-    state.window.startedAt = now.toISOString();
-    state.window.endsAt = windowEnd.toISOString();
+    // Rate limited means current window is exhausted, next window starts at current hour floor + 5h
+    const windowStart = this.floorToHour(now);
+    state.window.startedAt = windowStart.toISOString();
+    state.window.endsAt = windowStart.add(this.windowMs, 'millisecond').toISOString();
     state.window.callsThisWindow = 0;
     await saveState(state);
   }
