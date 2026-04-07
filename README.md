@@ -20,8 +20,8 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 - **First-Run Auto Setup** — Guided wizard with 3 built-in preset tasks on first launch
 - **3 Task Types** — Fixed (cron), Random (time range), Window (auto-fill gaps)
 - **5h Window Tracking** — Detects rate limits, auto-defers to next window
-- **Test Mode** — Instantly trigger a task and watch Claude's streaming response in a live panel-style interface
-- **Theme System** — 5 themes: mono (default), neon, matrix, classic, vapor — selectable during init
+- **Test Mode** — Instantly trigger a task and watch Claude's response in a live panel-style interface
+- **Theme System** — 6 themes: cyber (default), mono, neon, matrix, classic, vapor — selectable during init
 - **Borderless Cyberpunk UI** — Section headers with decorative lines, no box borders
 - **Model Selection** — Choose your Claude model (`claude_model` config field, passed via `--model`)
 - **i18n** — English, 中文, Русский, Deutsch, Français
@@ -75,7 +75,7 @@ When you run `cc-pilot` for the first time, the setup wizard launches automatica
   ✓ Claude CLI detected: /usr/local/bin/claude
 ? Path to Claude CLI binary: /usr/local/bin/claude
 ? Claude model: claude-sonnet-4-6 (fast, recommended)
-? Theme: mono (Monochrome)
+? Theme: cyber (Cyberpunk)
 ```
 
 The wizard presents 3 default preset tasks:
@@ -132,7 +132,7 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
   [3] EDIT  ── Modify task params
   [4] REMOVE  ── Purge task
   [5] TOGGLE  ── Enable/disable task
-  [6] TEST  ── Trigger task with live streaming view
+  [6] TEST  ── Trigger task with live response view
   ▸ DAEMON ───────────────────────────────────
   [7] START  ── Launch scheduling engine
   [8] STOP  ── Halt scheduling engine
@@ -164,7 +164,7 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
 
 ## Test Mode
 
-Select `[6] TEST` from the menu or run `cc-pilot tasks test` to immediately trigger a task and watch Claude's response in a live streaming panel-style interface:
+Select `[6] TEST` from the menu or run `cc-pilot tasks test` to immediately trigger a task and watch Claude's response in a live panel-style interface:
 
 ```
   ▸ YOU  TASK morning-activate  CWD .  TIME 07:23:14
@@ -190,7 +190,7 @@ Select `[6] TEST` from the menu or run `cc-pilot tasks test` to immediately trig
     ● SUCCESS  47s  1.8k tokens
 ```
 
-The streaming interface shows Claude's response in real time as it generates, giving you immediate feedback on how your task prompts perform.
+The interface shows Claude's response in real time, giving you immediate feedback on how your task prompts perform.
 
 ---
 
@@ -295,7 +295,7 @@ global:
   window_duration: 5h
   language: en
   ui_size: medium
-  theme: mono
+  theme: cyber
   # prompt_pool:                   # optional: custom random prompts
   #   - "Hello, how are you?"
   #   - "Write a haiku"
@@ -337,7 +337,7 @@ tasks:
 | `global.window_duration` | Claude Code rate-limit window duration (default: `5h`) |
 | `global.language` | Interface language: `en`, `zh`, `ru`, `de`, `fr` |
 | `global.ui_size` | Terminal UI panel size: `small`, `medium`, `large` |
-| `global.theme` | UI theme: `mono`, `neon`, `matrix`, `classic`, `vapor` (default: `mono`) |
+| `global.theme` | UI theme: `cyber`, `mono`, `neon`, `matrix`, `classic`, `vapor` (default: `cyber`) |
 | `global.prompt_pool` | Custom random prompt pool. If set, overrides built-in 100 prompts |
 | `tasks[].name` | Unique task identifier |
 | `tasks[].type` | `fixed`, `random`, or `window` |
@@ -361,7 +361,7 @@ cc-pilot tasks list          # List all tasks
 cc-pilot tasks add           # Add a new task (interactive)
 cc-pilot tasks remove        # Remove a task
 cc-pilot tasks toggle        # Enable/disable a task
-cc-pilot tasks test          # Trigger a task with live streaming view
+cc-pilot tasks test          # Trigger a task with live response view
 cc-pilot tasks history       # View task execution history
 
 cc-pilot log                 # View today's execution log
@@ -415,15 +415,16 @@ CC-PILOT ships with 5 built-in themes, selectable during the init wizard or by e
 
 | Theme | Description |
 |-------|-------------|
-| `mono` | Monochrome — clean black/white/gray (default) |
+| `mono` | Monochrome — clean black/white/gray |
 | `neon` | Neon Cyberpunk — cyan/magenta gradients |
 | `matrix` | Matrix — green terminal aesthetic |
 | `classic` | Classic — no colors, plain text |
 | `vapor` | Vaporwave — pink/purple/cyan palette |
+| `cyber` | Cyberpunk — yellow/cyan/red-pink palette (default) |
 
 ```yaml
 global:
-  theme: mono    # neon | mono | matrix | classic | vapor
+  theme: cyber    # cyber | mono | neon | matrix | classic | vapor
 ```
 
 ---

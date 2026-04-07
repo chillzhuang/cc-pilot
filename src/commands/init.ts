@@ -135,7 +135,7 @@ export async function firstRunSetup(): Promise<void> {
     name: 'theme',
     message: language === 'zh' ? '主题风格:' : 'Theme:',
     choices: themes.map(th => ({ name: `${th.name} (${th.label})`, value: th.name })),
-    default: 'mono',
+    default: 'cyber',
   }]);
 
   setTheme(theme as ThemeName);

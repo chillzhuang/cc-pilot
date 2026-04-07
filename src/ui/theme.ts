@@ -29,11 +29,32 @@ export interface Theme {
   emptyBar: string;
 }
 
-export type ThemeName = 'neon' | 'mono' | 'matrix' | 'classic' | 'vapor';
+export type ThemeName = 'neon' | 'mono' | 'matrix' | 'classic' | 'vapor' | 'cyber';
 
 // ─── Theme Definitions ─────────────────────────────────
 
 const THEMES: Record<ThemeName, Theme> = {
+  cyber: {
+    name: 'Cyberpunk',
+    primary: chalk.rgb(252, 238, 9).bold,       // cyber yellow
+    secondary: chalk.rgb(0, 240, 255),           // cyber cyan
+    accent: chalk.rgb(255, 0, 60),               // cyber red-pink
+    dim: chalk.rgb(120, 110, 50),                // muted gold
+    text: chalk.rgb(252, 238, 9),                // yellow text
+    value: chalk.rgb(0, 240, 255),               // cyan values
+    success: chalk.rgb(0, 240, 255).bold,        // cyan success
+    error: chalk.rgb(255, 0, 60).bold,           // red-pink error
+    warn: chalk.rgb(252, 238, 9),                // yellow warn
+    bold: chalk.rgb(252, 238, 9).bold,
+    sectionChar: '\u2501', // ━
+    separator: '\u2500',   // ─
+    bullet: '\u25B8',      // ▸
+    dot: '\u25CF',         // ●
+    dotEmpty: '\u25CB',    // ○
+    bar: '\u2588',         // █
+    emptyBar: '\u2591',    // ░
+  },
+
   mono: {
     name: 'Monochrome',
     primary: chalk.white.bold,
@@ -142,7 +163,7 @@ const THEMES: Record<ThemeName, Theme> = {
 
 // ─── Current Theme ──────────────────────────────────────
 
-let current: Theme = THEMES.mono;
+let current: Theme = THEMES.cyber;
 
 export function setTheme(name: ThemeName): void {
   current = THEMES[name] ?? THEMES.neon;
@@ -194,16 +215,13 @@ export function gradient(text: string): string {
   if (current === THEMES.classic || current === THEMES.mono) {
     return current.bold(text);
   }
-  const from = current === THEMES.vapor
-    ? { r: 255, g: 113, b: 206 }
-    : current === THEMES.matrix
-      ? { r: 0, g: 255, b: 65 }
-      : { r: 0, g: 255, b: 255 };
-  const to = current === THEMES.vapor
-    ? { r: 1, g: 205, b: 254 }
-    : current === THEMES.matrix
-      ? { r: 0, g: 180, b: 45 }
-      : { r: 255, g: 0, b: 255 };
+  const gradients: Record<string, { from: {r:number;g:number;b:number}; to: {r:number;g:number;b:number} }> = {
+    vapor: { from: { r: 255, g: 113, b: 206 }, to: { r: 1, g: 205, b: 254 } },
+    matrix: { from: { r: 0, g: 255, b: 65 }, to: { r: 0, g: 180, b: 45 } },
+    cyber: { from: { r: 252, g: 238, b: 9 }, to: { r: 255, g: 0, b: 60 } },
+  };
+  const name = getThemeName();
+  const { from, to } = gradients[name] ?? { from: { r: 0, g: 255, b: 255 }, to: { r: 255, g: 0, b: 255 } };
 
   return [...text].map((char, i) => {
     if (char === ' ') return char;

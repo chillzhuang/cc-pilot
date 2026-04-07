@@ -13,15 +13,15 @@
 
 ---
 
-CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 对话**。它能智能管理 Claude Code 的 5 小时速率限制窗口——自动安排任务、检测限流、并推迟到下一个可用窗口执行。
+CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 对话**。它能智能触发 Claude Code 的 5 小时速率限制窗口——自动安排任务、检测限流、并推迟到下一个可用窗口执行。
 
 ## 核心特性
 
 - **首次运行自动配置** — 引导式向导，内置 3 个预设任务，开箱即用
 - **3 种任务类型** — 定时任务（cron）、随机任务（时间范围）、窗口任务（自动填充间隙）
 - **5 小时窗口追踪** — 自动检测限流，推迟到下一个窗口
-- **测试模式** — 即时触发任务，实时查看 Claude 的流式响应，面板风格交互界面
-- **主题系统** — 5 种主题：mono（默认）、neon、matrix、classic、vapor，初始化时可选
+- **测试模式** — 即时触发任务，实时查看 Claude 的响应，面板风格交互界面
+- **主题系统** — 6 种主题：cyber（默认）、mono、neon、matrix、classic、vapor，初始化时可选
 - **无边框赛博朋克 UI** — 区块标题 + 装饰线条，无边框字符
 - **模型选择** — 可配置 Claude 模型（`claude_model` 字段，通过 `--model` 传递）
 - **多语言支持** — English、中文、Русский、Deutsch、Français
@@ -75,7 +75,7 @@ cc-pilot
   ✓ 检测到 Claude CLI: /usr/local/bin/claude
 ? Claude CLI 路径: /usr/local/bin/claude
 ? Claude 模型: claude-sonnet-4-6 (fast, recommended)
-? 主题风格: mono (Monochrome)
+? 主题风格: cyber (Cyberpunk)
 ```
 
 向导会展示 3 个默认预设任务：
@@ -132,7 +132,7 @@ cc-pilot
   [3] 编辑  ── 修改任务参数
   [4] 删除  ── 清除任务
   [5] 开关  ── 启用/禁用任务
-  [6] 测试  ── 触发任务并实时查看流式响应
+  [6] 测试  ── 触发任务并实时查看响应
   ▸ 守护进程 ───────────────────────────────────
   [7] 启动  ── 启动调度引擎
   [8] 停止  ── 停止调度引擎
@@ -164,7 +164,7 @@ cc-pilot
 
 ## 测试模式
 
-在菜单中选择 `[6] 测试` 或运行 `cc-pilot tasks test`，即可立即触发任务并在实时流式面板界面中查看 Claude 的响应：
+在菜单中选择 `[6] 测试` 或运行 `cc-pilot tasks test`，即可立即触发任务并在面板界面中查看 Claude 的响应：
 
 ```
   ▸ 你  TASK morning-activate  CWD ~/projects/my-app  TIME 07:23:14
@@ -190,7 +190,7 @@ cc-pilot
     ● 成功  47s  1.8k tokens
 ```
 
-流式界面会实时显示 Claude 的响应内容，让你即时了解任务 prompt 的执行效果。
+界面会实时显示 Claude 的响应内容，让你即时了解任务 prompt 的执行效果。
 
 ---
 
@@ -295,7 +295,7 @@ global:
   window_duration: 5h
   language: zh
   ui_size: medium
-  theme: mono
+  theme: cyber
   # prompt_pool:                   # 可选：自定义随机 prompt 池
   #   - "你好，今天心情怎么样？"
   #   - "写一首小诗"
@@ -361,7 +361,7 @@ cc-pilot tasks list          # 查看所有任务
 cc-pilot tasks add           # 新增任务（交互式）
 cc-pilot tasks remove        # 删除任务
 cc-pilot tasks toggle        # 启用/禁用任务
-cc-pilot tasks test          # 触发任务并实时查看流式响应
+cc-pilot tasks test          # 触发任务并实时查看响应
 cc-pilot tasks history       # 查看任务执行历史
 
 cc-pilot log                 # 查看今日执行日志
@@ -420,10 +420,11 @@ CC-PILOT 内置 5 种主题，可在初始化向导中选择，或通过编辑 `
 | `matrix` | 矩阵 — 绿色终端风格 |
 | `classic` | 经典 — 无颜色，纯文本 |
 | `vapor` | 蒸汽波 — 粉紫青色调 |
+| `cyber` | 赛博朋克 — 黄/青/红粉色调（默认） |
 
 ```yaml
 global:
-  theme: mono    # neon | mono | matrix | classic | vapor
+  theme: cyber    # cyber | mono | neon | matrix | classic | vapor
 ```
 
 ---

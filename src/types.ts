@@ -8,7 +8,7 @@
 export type TaskType = 'fixed' | 'random' | 'window';
 export type Locale = 'en' | 'zh' | 'ru' | 'de' | 'fr';
 export type UISize = 'small' | 'medium' | 'large';
-export type ThemeName = 'neon' | 'mono' | 'matrix' | 'classic' | 'vapor';
+export type ThemeName = 'neon' | 'mono' | 'matrix' | 'classic' | 'vapor' | 'cyber';
 
 export interface BaseTask {
   name: string;

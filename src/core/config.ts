@@ -17,7 +17,7 @@ const DEFAULT_GLOBAL: GlobalConfig = {
   windowDuration: '5h',
   language: 'en',
   uiSize: 'medium',
-  theme: 'mono',
+  theme: 'cyber',
   promptPool: [],
 };
 
