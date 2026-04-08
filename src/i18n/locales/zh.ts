@@ -204,7 +204,7 @@ const zh: TranslationSchema = {
     tokenSet: 'Token 已配置',
     tokenNotSet: 'Token 未配置',
     actionSelect: '选择操作',
-    setToken: '设置 Token',
+    setToken: '设置Token',
     toggle: '开启/关闭',
     sendTest: '发送测试',
     tokenPrompt: '输入钉钉机器人 Token',
