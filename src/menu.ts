@@ -265,7 +265,8 @@ export async function interactiveMenu(): Promise<void> {
 
   let running = true;
   while (running) {
-    console.clear();
+    // Clear screen + scrollback buffer + cursor home (prevents ghost duplication)
+    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
     const statusInfo = await getStatusInfo();
     console.log(renderBanner(statusInfo));
     console.log(renderMenu());
