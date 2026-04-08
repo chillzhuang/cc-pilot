@@ -35,6 +35,14 @@ export async function loadState(): Promise<AppState> {
     if (!data.knowledge) {
       data.knowledge = { categories: {} };
     }
+    // Monthly reset: clear recentDimensions on the 1st of each month
+    const currentMonth = dayjs().format('YYYY-MM');
+    if (data.knowledge.resetMonth !== currentMonth) {
+      for (const cat of Object.values(data.knowledge.categories)) {
+        cat.recentDimensions = [];
+      }
+      data.knowledge.resetMonth = currentMonth;
+    }
     return data;
   } catch {
     return defaultState();

@@ -70,7 +70,7 @@ export async function sendTestNotification(token: string): Promise<SendResult> {
     '',
     '---',
     '',
-    '> *CC-PILOT · Claude Code Auto Pilot*',
+    '> *CC-PILOT · Powered by BladeX*',
   ].join('\n');
 
   return sendMarkdown(token, 'CC-PILOT Test', text);
@@ -109,7 +109,7 @@ export async function sendTaskNotification(token: string, payload: TaskNotifyPay
     '',
     '---',
     '',
-    '> *CC-PILOT · Claude Code Auto Pilot*',
+    '> *CC-PILOT · Powered by BladeX*',
   ].join('\n');
 
   return sendMarkdown(token, `CC-PILOT · ${payload.taskName}`, text);

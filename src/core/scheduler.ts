@@ -12,7 +12,7 @@ import { WindowTracker } from './window.js';
 import { recordExecution, loadState, saveState } from './state.js';
 import { appendHistory } from './state.js';
 import {
-  randomTimeInRange,
+  parseTimeRange,
   isInBlackout,
   isInTimeRange,
   parseOffset,
@@ -37,20 +37,28 @@ export class Scheduler {
     this.config = await loadConfig();
     this.running = true;
 
+    const state = await loadState();
+
     for (const task of this.config.tasks) {
       if (!task.enabled) continue;
       switch (task.type) {
         case 'fixed':
           this.scheduleFixed(task);
           break;
-        case 'random':
-          this.scheduleRandom(task);
+        case 'random': {
+          const taskState = this.ensureTaskState(state, task.name);
+          const nextRun = this.scheduleRandom(task, taskState.todayRuns);
+          taskState.nextRun = nextRun.toISOString();
           break;
+        }
         case 'window':
           this.scheduleWindow(task);
           break;
       }
     }
+
+    // Single atomic write — CLI always sees a complete snapshot
+    await saveState(state);
 
     // Check window state every minute
     schedule.scheduleJob('window-check', '* * * * *', () => {
@@ -59,7 +67,7 @@ export class Scheduler {
 
     // Re-schedule random tasks at midnight
     schedule.scheduleJob('daily-reset', '0 0 * * *', () => {
-      this.rescheduleRandomTasks();
+      void this.rescheduleRandomTasks();
     });
 
     await logger.info('Scheduler started');
@@ -87,47 +95,43 @@ export class Scheduler {
     if (job) this.jobs.set(task.name, job);
   }
 
-  private scheduleRandom(task: RandomTask): void {
-    const targetTime = randomTimeInRange(task.timeRange, task.days);
-    if (!targetTime) return;
+  // ─── Random Task Scheduling ────────────────────────────
+
+  private scheduleRandom(task: RandomTask, todayRuns: number = 0): Date {
+    const now = new Date();
+
+    // Already executed today — skip directly to next matching day
+    if (todayRuns > 0) {
+      return this.scheduleRandomNext(task);
+    }
+
+    if (!isDayMatch(now, task.days)) {
+      return this.scheduleRandomNext(task);
+    }
+
+    const { start, end } = parseTimeRange(task.timeRange);
+    const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
+    const windowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
+
+    if (windowEnd.getTime() <= now.getTime()) {
+      return this.scheduleRandomNext(task);
+    }
+
+    const effectiveStart = Math.max(windowStart.getTime(), now.getTime());
+    const targetTime = new Date(effectiveStart + Math.random() * (windowEnd.getTime() - effectiveStart));
 
     if (isInBlackout(targetTime, this.config.global.blackout)) {
-      return;
+      return this.scheduleRandomNext(task);
     }
 
-    // Skip if the generated time is already past (e.g. daemon restarted after the time range)
-    if (targetTime.getTime() < Date.now()) {
-      return;
-    }
+    const stateKey = `random-${task.name}`;
+    const job = schedule.scheduleJob(stateKey, targetTime, this.createRandomCallback(task));
+    if (job) this.jobs.set(stateKey, job);
 
-    const state_key = `random-${task.name}`;
-    const job = schedule.scheduleJob(state_key, targetTime, async () => {
-      if (!this.running) return;
-      // Double-check: skip if the task already ran today (guards against duplicate daemons)
-      const state = await loadState();
-      const taskState = state.tasks[task.name];
-      if (taskState && taskState.todayRuns > 0) {
-        await logger.info(`SKIP  ${task.name} — already ran ${taskState.todayRuns} time(s) today`);
-        this.scheduleRandomNext(task);
-        return;
-      }
-      await this.execute(task, task.prompt);
-      // Reschedule for next matching day
-      this.scheduleRandomNext(task);
-    });
-    if (job) this.jobs.set(state_key, job);
-
-    void (async () => {
-      const state = await loadState();
-      if (!state.tasks[task.name]) {
-        state.tasks[task.name] = { lastRun: null, nextRun: null, todayRuns: 0, todayTokens: 0 };
-      }
-      state.tasks[task.name].nextRun = targetTime.toISOString();
-      await saveState(state);
-    })();
+    return targetTime;
   }
 
-  private scheduleRandomNext(task: RandomTask): void {
+  private scheduleRandomNext(task: RandomTask): Date {
     const nextDay = nextDayMatch(task.days);
     const [startStr] = task.timeRange.split('-');
     const [h, m] = startStr.split(':').map(Number);
@@ -136,34 +140,53 @@ export class Scheduler {
     const offset = Math.random() * rangeMs;
     const targetTime = base.add(offset, 'millisecond').toDate();
 
-    const state_key = `random-${task.name}`;
-    const existing = this.jobs.get(state_key);
+    const stateKey = `random-${task.name}`;
+    const existing = this.jobs.get(stateKey);
     if (existing) existing.cancel();
 
-    const job = schedule.scheduleJob(state_key, targetTime, async () => {
+    const job = schedule.scheduleJob(stateKey, targetTime, this.createRandomCallback(task));
+    if (job) this.jobs.set(stateKey, job);
+
+    return targetTime;
+  }
+
+  private createRandomCallback(task: RandomTask): () => Promise<void> {
+    return async () => {
       if (!this.running) return;
-      // Double-check: skip if the task already ran today (guards against duplicate daemons)
+
+      if (isInBlackout(new Date(), this.config.global.blackout)) {
+        await logger.info(`SKIP  ${task.name} — in blackout period`);
+        this.persistNextRun(task.name, this.scheduleRandomNext(task));
+        return;
+      }
+
       const state = await loadState();
       const taskState = state.tasks[task.name];
       if (taskState && taskState.todayRuns > 0) {
         await logger.info(`SKIP  ${task.name} — already ran ${taskState.todayRuns} time(s) today`);
-        this.scheduleRandomNext(task);
+        this.persistNextRun(task.name, this.scheduleRandomNext(task));
         return;
       }
-      await this.execute(task, task.prompt);
-      this.scheduleRandomNext(task);
-    });
-    if (job) this.jobs.set(state_key, job);
 
-    // Update nextRun in state so the display shows the correct next trigger
+      await this.execute(task, task.prompt);
+      this.persistNextRun(task.name, this.scheduleRandomNext(task));
+    };
+  }
+
+  /** Runtime-only: persist a single task's nextRun (no race — callbacks fire at different times) */
+  private persistNextRun(taskName: string, targetTime: Date): void {
     void (async () => {
       const state = await loadState();
-      if (!state.tasks[task.name]) {
-        state.tasks[task.name] = { lastRun: null, nextRun: null, todayRuns: 0, todayTokens: 0 };
-      }
-      state.tasks[task.name].nextRun = targetTime.toISOString();
+      this.ensureTaskState(state, taskName).nextRun = targetTime.toISOString();
       await saveState(state);
     })();
+  }
+
+  private ensureTaskState(state: { tasks: Record<string, { lastRun: string | null; nextRun: string | null; todayRuns: number; todayTokens: number }> }, taskName: string) {
+    if (!state.tasks[taskName]) {
+      state.tasks[taskName] = { lastRun: null, nextRun: null, todayRuns: 0, todayTokens: 0 };
+    }
+    return state.tasks[taskName];
   }
 
   private scheduleWindow(task: WindowTask): void {
@@ -177,16 +200,16 @@ export class Scheduler {
       if (isInBlackout(triggerTime, this.config.global.blackout)) return;
       if (!isInTimeRange(triggerTime, task.activeHours)) return;
 
-      const state_key = `window-${task.name}`;
-      const existing = this.jobs.get(state_key);
+      const stateKey = `window-${task.name}`;
+      const existing = this.jobs.get(stateKey);
       if (existing) existing.cancel();
 
-      const job = schedule.scheduleJob(state_key, triggerTime, async () => {
+      const job = schedule.scheduleJob(stateKey, triggerTime, async () => {
         if (!this.running) return;
         const prompt = task.prompts[Math.floor(Math.random() * task.prompts.length)];
         await this.execute(task, prompt);
       });
-      if (job) this.jobs.set(state_key, job);
+      if (job) this.jobs.set(stateKey, job);
     });
 
     // Also check immediately if window is already open
@@ -201,13 +224,13 @@ export class Scheduler {
         const offsetMs = parseOffset(task.triggerOffset);
         const triggerTime = new Date(Date.now() + offsetMs);
         if (isInTimeRange(triggerTime, task.activeHours)) {
-          const state_key = `window-${task.name}`;
-          const job = schedule.scheduleJob(state_key, triggerTime, async () => {
+          const stateKey = `window-${task.name}`;
+          const job = schedule.scheduleJob(stateKey, triggerTime, async () => {
             if (!this.running) return;
             const prompt = task.prompts[Math.floor(Math.random() * task.prompts.length)];
             await this.execute(task, prompt);
           });
-          if (job) this.jobs.set(state_key, job);
+          if (job) this.jobs.set(stateKey, job);
         }
       }
     }
@@ -269,15 +292,19 @@ export class Scheduler {
     await notifyTaskExecution(this.config, task.name, resolvedPrompt, result);
   }
 
-  private rescheduleRandomTasks(): void {
+  private async rescheduleRandomTasks(): Promise<void> {
+    const state = await loadState();
     for (const task of this.config.tasks) {
       if (task.type === 'random' && task.enabled) {
-        const key = `random-${task.name}`;
-        const existing = this.jobs.get(key);
+        const stateKey = `random-${task.name}`;
+        const existing = this.jobs.get(stateKey);
         if (existing) existing.cancel();
-        this.scheduleRandom(task);
+        const taskState = this.ensureTaskState(state, task.name);
+        const nextRun = this.scheduleRandom(task, taskState.todayRuns);
+        taskState.nextRun = nextRun.toISOString();
       }
     }
+    await saveState(state);
   }
 
   private getTimeRangeMs(range: string): number {

@@ -124,6 +124,7 @@ export interface KnowledgeCategoryState {
 
 export interface KnowledgeState {
   categories: Record<string, KnowledgeCategoryState>;
+  resetMonth?: string; // "YYYY-MM" — tracks last monthly recentDimensions clear
 }
 
 // ─── Execution ───────────────────────────────────────────

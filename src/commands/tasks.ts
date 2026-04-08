@@ -9,12 +9,12 @@ import { getBuiltinCategoryIds } from '../core/knowledge.js';
 import { loadState, saveState, getTaskHistory } from '../core/state.js';
 import { executeTask } from '../core/executor.js';
 import { pickRandomPrompt, isAutoPrompt } from '../core/prompts.js';
-import { appendHistory, recordExecution } from '../core/state.js';
+import { appendHistory } from '../core/state.js';
 import { renderSection, renderPanel, renderStatusLine, renderSeparator } from '../ui/render.js';
 import { selectPrompt, checkboxPrompt, safePrompt, BACK } from '../ui/prompt.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
-import { formatDuration, formatTime } from '../utils/time.js';
+import { formatDuration, formatTime, computeNextRandomRun } from '../utils/time.js';
 import ora from 'ora';
 import dayjs from 'dayjs';
 import { notifyTaskExecution } from '../core/notify.js';
@@ -43,17 +43,38 @@ export async function tasksListCommand(): Promise<void> {
     return `${idx}  ${name}  ${type}  ${T.dim(schedule)}  ${status}`;
   });
 
-  const taskNames = new Set(config.tasks.map(tk => tk.name));
+  // Compute effective next trigger for each enabled task
+  // Strategy: use daemon-persisted nextRun if valid, otherwise compute from task config
   const now = Date.now();
-  const nextTask = state.tasks
-    ? Object.entries(state.tasks)
-      .filter(([name, v]) => v.nextRun && taskNames.has(name) && new Date(v.nextRun).getTime() > now)
-      .sort(([, a], [, b]) => new Date(a.nextRun!).getTime() - new Date(b.nextRun!).getTime())[0]
-    : null;
+  const nextRuns: Array<{ name: string; time: Date }> = [];
+  for (const task of config.tasks) {
+    if (!task.enabled) continue;
+    const taskState = state.tasks[task.name];
+    const stateNextRun = taskState?.nextRun ? new Date(taskState.nextRun) : null;
 
-  if (nextTask) {
+    if (task.type === 'random') {
+      if (stateNextRun && stateNextRun.getTime() > now) {
+        nextRuns.push({ name: task.name, time: stateNextRun });
+      } else {
+        const alreadyRan = (taskState?.todayRuns ?? 0) > 0;
+        nextRuns.push({
+          name: task.name,
+          time: computeNextRandomRun(task.timeRange, task.days, new Date(), alreadyRan),
+        });
+      }
+    } else if (stateNextRun && stateNextRun.getTime() > now) {
+      // Fixed / window tasks: fall back to daemon-persisted value
+      nextRuns.push({ name: task.name, time: stateNextRun });
+    }
+  }
+  nextRuns.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+  if (nextRuns.length > 0) {
     rows.push('');
-    rows.push(`${t('task.nextTrigger')} ${T.primary(nextTask[0])} @ ${T.accent(dayjs(nextTask[1].nextRun!).format('HH:mm:ss'))}`);
+    const next = nextRuns[0];
+    const nextTime = dayjs(next.time);
+    const fmt = 'MM-DD HH:mm:ss';
+    rows.push(`${t('task.nextTrigger')} ${T.primary(next.name)} @ ${T.accent(nextTime.format(fmt))}`);
   }
 
   console.log(renderSection(`TASK REGISTRY  ${T.dim(`${config.tasks.length} loaded`)}`, rows));
@@ -325,7 +346,6 @@ export async function tasksTestCommand(): Promise<void> {
     status: result.rateLimited ? 'rate_limited' : result.success ? 'success' : 'error',
     tokens: result.tokens ?? 0,
   });
-  if (result.success) await recordExecution(taskName, result.tokens ?? 0);
 
   await notifyTaskExecution(config, taskName, prompt, result);
 }

@@ -143,8 +143,8 @@ export function formatTime(date: Date): string {
 
 export function nextDayMatch(daysSpec: string): Date {
   const now = new Date();
-  // Start from offset 1 (tomorrow) — this is called after a task has already
-  // executed today, so we need the *next* matching day, not today.
+  // Always start from tomorrow — all callers need the *next* matching day
+  // (window already passed, non-matching day, or task already ran today).
   for (let offset = 1; offset <= 7; offset++) {
     const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
     if (isDayMatch(candidate, daysSpec)) {
@@ -153,4 +153,37 @@ export function nextDayMatch(daysSpec: string): Date {
   }
   // Fallback: should never reach here with valid specs since we check 7 days
   return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+}
+
+/**
+ * Compute the next execution time for a random task — pure function, no side effects.
+ * Used by both CLI (display) and scheduler (scheduling decisions).
+ *
+ * Logic:
+ *   1. If task hasn't run today AND today matches AND window still open → random in remaining window
+ *   2. Otherwise → find next matching day → random in full window
+ */
+export function computeNextRandomRun(
+  timeRange: string,
+  days: string,
+  now: Date = new Date(),
+  alreadyRanToday: boolean = false,
+): Date {
+  if (!alreadyRanToday && isDayMatch(now, days)) {
+    const { start, end } = parseTimeRange(timeRange);
+    const windowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
+
+    if (windowEnd.getTime() > now.getTime()) {
+      const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
+      const effectiveStart = Math.max(windowStart.getTime(), now.getTime());
+      return new Date(effectiveStart + Math.random() * (windowEnd.getTime() - effectiveStart));
+    }
+  }
+
+  // Window passed / non-matching day / already ran today → next matching day
+  const nextDay = nextDayMatch(days);
+  const { start, end } = parseTimeRange(timeRange);
+  const base = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), start.h, start.m);
+  const rangeMs = ((end.h * 60 + end.m) - (start.h * 60 + start.m)) * 60 * 1000;
+  return new Date(base.getTime() + Math.random() * rangeMs);
 }

@@ -76,7 +76,7 @@ export async function sendTestNotification(token: string): Promise<SendResult> {
     [text('Feishu notification is working!\n')],
     [text(`🕐 Time  ${now}\n`)],
     [text('━━━━━━━━━━━━━━━━━━━━\n')],
-    [text('CC-PILOT · Claude Code Auto Pilot')],
+    [text('CC-PILOT · Powered by BladeX')],
   ]);
 }
 
@@ -102,6 +102,6 @@ export async function sendTaskNotification(token: string, payload: TaskNotifyPay
     [text(`📝 Response\n`)],
     [text(`${response}\n`)],
     [text('━━━━━━━━━━━━━━━━━━━━\n')],
-    [text('CC-PILOT · Claude Code Auto Pilot')],
+    [text('CC-PILOT · Powered by BladeX')],
   ]);
 }
