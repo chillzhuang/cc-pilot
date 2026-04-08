@@ -41,11 +41,12 @@ export async function tasksListCommand(): Promise<void> {
     return `${idx}  ${name}  ${type}  ${T.dim(schedule)}  ${status}`;
   });
 
-  // Only show next trigger for tasks that exist in config
+  // Only show next trigger for tasks that exist in config, filtering out past times
   const taskNames = new Set(config.tasks.map(tk => tk.name));
+  const now = Date.now();
   const nextTask = state.tasks
     ? Object.entries(state.tasks)
-      .filter(([name, v]) => v.nextRun && taskNames.has(name))
+      .filter(([name, v]) => v.nextRun && taskNames.has(name) && new Date(v.nextRun).getTime() > now)
       .sort(([, a], [, b]) => new Date(a.nextRun!).getTime() - new Date(b.nextRun!).getTime())[0]
     : null;
 

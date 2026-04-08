@@ -95,6 +95,11 @@ export class Scheduler {
       return;
     }
 
+    // Skip if the generated time is already past (e.g. daemon restarted after the time range)
+    if (targetTime.getTime() < Date.now()) {
+      return;
+    }
+
     const state_key = `random-${task.name}`;
     const job = schedule.scheduleJob(state_key, targetTime, async () => {
       if (!this.running) return;
@@ -115,10 +120,10 @@ export class Scheduler {
   }
 
   private scheduleRandomNext(task: RandomTask): void {
-    const tomorrow = nextDayMatch(task.days);
+    const nextDay = nextDayMatch(task.days);
     const [startStr] = task.timeRange.split('-');
     const [h, m] = startStr.split(':').map(Number);
-    const base = dayjs(tomorrow).hour(h).minute(m).second(0);
+    const base = dayjs(nextDay).hour(h).minute(m).second(0);
     const rangeMs = this.getTimeRangeMs(task.timeRange);
     const offset = Math.random() * rangeMs;
     const targetTime = base.add(offset, 'millisecond').toDate();
@@ -133,6 +138,16 @@ export class Scheduler {
       this.scheduleRandomNext(task);
     });
     if (job) this.jobs.set(state_key, job);
+
+    // Update nextRun in state so the display shows the correct next trigger
+    void (async () => {
+      const state = await loadState();
+      if (!state.tasks[task.name]) {
+        state.tasks[task.name] = { lastRun: null, nextRun: null, todayRuns: 0, todayTokens: 0 };
+      }
+      state.tasks[task.name].nextRun = targetTime.toISOString();
+      await saveState(state);
+    })();
   }
 
   private scheduleWindow(task: WindowTask): void {

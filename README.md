@@ -154,7 +154,7 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
   [L] LANG   ── EN | 中文 | РУС | DE | FR
-  [T] THEME  ── mono | neon | matrix | classic | vapor
+  [T] THEME  ── cyber | mono | neon | matrix | classic | vapor
   [X] ABOUT  ── Author & project info
 
   ░▒▓ INPUT ▓▒░
@@ -411,16 +411,16 @@ View per-task execution records with `cc-pilot tasks history` or menu option `[1
 
 ## Theme System
 
-CC-PILOT ships with 5 built-in themes, selectable during the init wizard or by editing `config.yml`:
+CC-PILOT ships with 6 built-in themes, selectable during the init wizard or by editing `config.yml`:
 
 | Theme | Description |
 |-------|-------------|
+| `cyber` | Cyberpunk — yellow/cyan/red-pink palette (default) |
 | `mono` | Monochrome — clean black/white/gray |
 | `neon` | Neon Cyberpunk — cyan/magenta gradients |
 | `matrix` | Matrix — green terminal aesthetic |
 | `classic` | Classic — no colors, plain text |
 | `vapor` | Vaporwave — pink/purple/cyan palette |
-| `cyber` | Cyberpunk — yellow/cyan/red-pink palette (default) |
 
 ```yaml
 global:
@@ -598,7 +598,7 @@ src/
 │   ├── types.ts         #   Translation schema
 │   └── locales/         #   EN, ZH, RU, DE, FR
 ├── ui/                  # Borderless cyberpunk terminal UI
-│   ├── theme.ts         #   5 themes, colors, gradients
+│   ├── theme.ts         #   6 themes, colors, gradients
 │   ├── banner.ts        #   ASCII art + status bar
 │   └── render.ts        #   Section, panel, progress rendering
 └── utils/               # Utilities

@@ -154,7 +154,7 @@ cc-pilot
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
   [L] 语言  ── EN | 中文 | РУС | DE | FR
-  [T] 主题  ── mono | neon | matrix | classic | vapor
+  [T] 主题  ── cyber | mono | neon | matrix | classic | vapor
   [X] 关于  ── 作者与项目信息
 
   ░▒▓ 输入 ▓▒░
@@ -337,7 +337,7 @@ tasks:
 | `global.window_duration` | Claude Code 限流窗口时长（默认：`5h`） |
 | `global.language` | 界面语言：`en`、`zh`、`ru`、`de`、`fr` |
 | `global.ui_size` | 终端 UI 面板尺寸：`small`、`medium`、`large` |
-| `global.theme` | UI 主题：`mono`、`neon`、`matrix`、`classic`、`vapor`（默认：`mono`） |
+| `global.theme` | UI 主题：`cyber`、`mono`、`neon`、`matrix`、`classic`、`vapor`（默认：`cyber`） |
 | `global.prompt_pool` | 自定义随机 prompt 池，配置后覆盖内置 100 个 prompt |
 | `tasks[].name` | 任务唯一标识 |
 | `tasks[].type` | 任务类型：`fixed`、`random`、`window` |
@@ -411,16 +411,16 @@ cc-pilot uninstall           # 移除系统开机自启服务
 
 ## 主题系统
 
-CC-PILOT 内置 5 种主题，可在初始化向导中选择，或通过编辑 `config.yml` 切换：
+CC-PILOT 内置 6 种主题，可在初始化向导中选择，或通过编辑 `config.yml` 切换：
 
 | 主题 | 说明 |
 |------|------|
-| `mono` | 单色 — 简洁黑白灰（默认） |
+| `cyber` | 赛博朋克 — 黄/青/红粉色调（默认） |
+| `mono` | 单色 — 简洁黑白灰 |
 | `neon` | 霓虹赛博朋克 — 青色/品红渐变 |
 | `matrix` | 矩阵 — 绿色终端风格 |
 | `classic` | 经典 — 无颜色，纯文本 |
 | `vapor` | 蒸汽波 — 粉紫青色调 |
-| `cyber` | 赛博朋克 — 黄/青/红粉色调（默认） |
 
 ```yaml
 global:
@@ -598,7 +598,7 @@ src/
 │   ├── types.ts         #   翻译 Schema
 │   └── locales/         #   EN, ZH, RU, DE, FR
 ├── ui/                  # 无边框赛博朋克终端 UI
-│   ├── theme.ts         #   5 种主题、颜色、渐变
+│   ├── theme.ts         #   6 种主题、颜色、渐变
 │   ├── banner.ts        #   ASCII 艺术字 + 状态栏
 │   └── render.ts        #   区块、面板、进度条渲染
 └── utils/               # 工具模块

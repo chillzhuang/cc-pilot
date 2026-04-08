@@ -143,12 +143,14 @@ export function formatTime(date: Date): string {
 
 export function nextDayMatch(daysSpec: string): Date {
   const now = new Date();
-  for (let offset = 0; offset <= 7; offset++) {
+  // Start from offset 1 (tomorrow) — this is called after a task has already
+  // executed today, so we need the *next* matching day, not today.
+  for (let offset = 1; offset <= 7; offset++) {
     const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
     if (isDayMatch(candidate, daysSpec)) {
       return candidate;
     }
   }
-  // Fallback: should never reach here with valid specs since we check 8 days
-  return now;
+  // Fallback: should never reach here with valid specs since we check 7 days
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 }

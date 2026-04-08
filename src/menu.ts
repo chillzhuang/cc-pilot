@@ -270,7 +270,7 @@ export async function interactiveMenu(): Promise<void> {
     console.log(renderBanner(statusInfo));
     console.log(renderMenu());
 
-    const input = await ask(`  ${gradient('\u2591\u2592\u2593 INPUT \u2593\u2592\u2591')}  `);
+    const input = await ask(`  ${gradient(`\u2591\u2592\u2593 ${t('menu.input').toUpperCase()} \u2593\u2592\u2591`)}  `);
     if (input === null) break;
 
     console.log('');

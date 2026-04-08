@@ -166,7 +166,7 @@ const THEMES: Record<ThemeName, Theme> = {
 let current: Theme = THEMES.cyber;
 
 export function setTheme(name: ThemeName): void {
-  current = THEMES[name] ?? THEMES.neon;
+  current = THEMES[name] ?? THEMES.cyber;
 }
 
 export function getTheme(): Theme {
@@ -177,7 +177,7 @@ export function getThemeName(): ThemeName {
   for (const [name, theme] of Object.entries(THEMES)) {
     if (theme === current) return name as ThemeName;
   }
-  return 'neon';
+  return 'cyber';
 }
 
 export function getAllThemes(): Array<{ name: ThemeName; label: string }> {
