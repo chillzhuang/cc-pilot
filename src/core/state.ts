@@ -73,7 +73,6 @@ export async function recordExecution(taskName: string, tokens: number): Promise
   state.tasks[taskName].lastRun = dayjs().toISOString();
   state.tasks[taskName].todayRuns += 1;
   state.tasks[taskName].todayTokens += tokens;
-  state.window.callsThisWindow += 1;
   await saveState(state);
 }
 

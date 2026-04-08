@@ -8,7 +8,7 @@ import { WindowTracker } from '../core/window.js';
 import { renderSection, renderProgress, renderStatusLine } from '../ui/render.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
-import { formatDuration } from '../utils/time.js';
+import { formatDuration, parseDuration } from '../utils/time.js';
 import dayjs from 'dayjs';
 
 export async function windowCommand(): Promise<void> {
@@ -18,9 +18,9 @@ export async function windowCommand(): Promise<void> {
   const wt = new WindowTracker(config.global.windowDuration);
   const ws = await wt.getStatus();
 
-  const totalMs = 5 * 60 * 60 * 1000;
-  const elapsed = ws.active ? totalMs - ws.remainMs : 0;
-  const percent = ws.active ? Math.round((elapsed / totalMs) * 100) : 0;
+  const windowMs = parseDuration(config.global.windowDuration);
+  const elapsed = ws.active ? windowMs - ws.remainMs : 0;
+  const percent = ws.active ? Math.round((elapsed / windowMs) * 100) : 0;
 
   console.log(renderSection('WINDOW STATE', [
     `CURRENT  ${renderProgress(percent, 100, 20)}`,

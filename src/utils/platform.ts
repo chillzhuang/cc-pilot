@@ -29,7 +29,7 @@ function systemdServicePath(): string {
 }
 
 function daemonPath(): string {
-  return join(CC_PILOT_ROOT, 'dist', 'core', 'daemon.js');
+  return join(CC_PILOT_ROOT, 'dist', 'core', 'daemon-entry.js');
 }
 
 export function getPlatform(): 'mac' | 'windows' | 'linux' {

@@ -27,9 +27,9 @@ function detectRateLimit(output: string): boolean {
     /rate.?limit/i,
     /too many requests/i,
     /usage.?limit/i,
-    /try again/i,
+    /try again later/i,
     /exceeded.*quota/i,
-    /capacity/i,
+    /over.?capacity/i,
   ];
   return patterns.some(p => p.test(output));
 }
@@ -45,7 +45,7 @@ export async function executeTask(
   const escapedPrompt = escapeShell(prompt);
   const modelFlag = model ? ` --model '${model}'` : '';
 
-  const cmd = `${claudePath} -p '${escapedPrompt}'${modelFlag} < /dev/null`;
+  const cmd = `"${claudePath}" -p '${escapedPrompt}'${modelFlag} < /dev/null`;
 
   return new Promise<ExecutionResult>((res) => {
     exec(

@@ -32,13 +32,13 @@ export function isDayMatch(date: Date, daysSpec: string): boolean {
 
   if (daysSpec === '*') return true;
 
-  // range format: "1-5"
+  // range format: "1-5" or "5-1" (wrap around Sunday)
   if (daysSpec.includes('-') && !daysSpec.includes(',')) {
     const [from, to] = daysSpec.split('-').map(Number);
     if (Number.isNaN(from) || Number.isNaN(to)) {
       throw new Error(`Invalid days spec: "${daysSpec}"`);
     }
-    return dow >= from && dow <= to;
+    return from > to ? (dow >= from || dow <= to) : (dow >= from && dow <= to);
   }
 
   // list format: "0,6"
