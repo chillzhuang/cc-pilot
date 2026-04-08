@@ -16,12 +16,12 @@ import type { CustomCategory } from '../types.js';
 
 const CATEGORY_LABELS: Record<string, string> = {
   tech: 'catTech', english: 'catEnglish', medical: 'catMedical',
-  legal: 'catLegal', psychology: 'catPsychology',
+  legal: 'catLegal', psychology: 'catPsychology', history: 'catHistory',
 };
 
 const CATEGORY_DESCS: Record<string, string> = {
   tech: 'catTechDesc', english: 'catEnglishDesc', medical: 'catMedicalDesc',
-  legal: 'catLegalDesc', psychology: 'catPsychologyDesc',
+  legal: 'catLegalDesc', psychology: 'catPsychologyDesc', history: 'catHistoryDesc',
 };
 
 function getCategoryLabel(id: string, customs: CustomCategory[]): string {

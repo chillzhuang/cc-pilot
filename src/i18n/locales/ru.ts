@@ -232,6 +232,8 @@ const ru: TranslationSchema = {
     catLegalDesc: 'Договоры, права, законодательство',
     catPsychology: 'Психология',
     catPsychologyDesc: 'Когнитивные искажения, привычки, решения',
+    catHistory: 'История',
+    catHistoryDesc: 'Цивилизации, войны, революции, ключевые события',
     selectCategories: 'Выберите категории знаний (минимум 1)',
     manageCustom: 'Управление своими категориями',
     resetProgress: 'Сбросить прогресс обучения',

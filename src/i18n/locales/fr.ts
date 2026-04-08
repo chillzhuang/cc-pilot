@@ -232,6 +232,8 @@ const fr: TranslationSchema = {
     catLegalDesc: 'Contrats, droits, réglementations',
     catPsychology: 'Psychologie',
     catPsychologyDesc: 'Biais cognitifs, habitudes, décisions',
+    catHistory: 'Histoire',
+    catHistoryDesc: 'Civilisations, guerres, révolutions, événements clés',
     selectCategories: 'Choisir les catégories de savoir (au moins 1)',
     manageCustom: 'Gérer les catégories personnalisées',
     resetProgress: 'Réinitialiser la progression',

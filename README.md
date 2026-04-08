@@ -28,7 +28,7 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 - **Borderless Cyberpunk UI** — Section headers with decorative lines, no box borders
 - **Model Selection** — Choose your Claude model (`claude_model` config field, passed via `--model`)
 - **i18n** — English, 中文, Русский, Deutsch, Français
-- **Knowledge Learning Mode** — 5 built-in categories (Tech, English, Medical, Legal, Psychology) + custom categories, delivered via push notifications
+- **Knowledge Learning Mode** — 6 built-in categories (Tech, English, Medical, Legal, Psychology, History) + custom categories, delivered via push notifications
 - **Anti-Repeat Engine** — Shuffle-and-iterate guarantees ~150+ unique questions per category before any repeat, with AI-level recency hints
 - **Dynamic Prompt Engine** — Template × dimension pool = 1,500+ unique prompts per locale, i18n-aware
 - **Version-Aware Daemon** — Auto-restarts daemon on package upgrade, no manual stop/start needed
@@ -81,6 +81,7 @@ CC-PILOT doubles as an intelligent **knowledge-learning tool**. Each scheduled t
 | **Medical** | Nutrition, sleep science, first aid, exercise, mental health |
 | **Legal** | Contracts, consumer rights, employment law, privacy, IP |
 | **Psychology** | Cognitive biases, habits, motivation, stress management |
+| **History** | Ancient civilizations, wars, revolutions, key turning points |
 
 ### Anti-Repeat Guarantee
 

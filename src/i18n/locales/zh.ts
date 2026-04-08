@@ -232,6 +232,8 @@ const zh: TranslationSchema = {
     catLegalDesc: '合同、权益、法规',
     catPsychology: '心理',
     catPsychologyDesc: '认知偏误、习惯、决策',
+    catHistory: '历史',
+    catHistoryDesc: '文明、战争、革命、重大事件',
     selectCategories: '选择知识学习类别（至少选 1 个）',
     manageCustom: '管理自定义类别',
     resetProgress: '重置学习进度',

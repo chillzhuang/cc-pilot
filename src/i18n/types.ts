@@ -234,6 +234,8 @@ export interface TranslationSchema {
     catLegalDesc: string;
     catPsychology: string;
     catPsychologyDesc: string;
+    catHistory: string;
+    catHistoryDesc: string;
     selectCategories: string;
     manageCustom: string;
     resetProgress: string;

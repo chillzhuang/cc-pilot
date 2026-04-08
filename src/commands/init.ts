@@ -151,6 +151,7 @@ export async function firstRunSetup(): Promise<void> {
       { name: language === 'zh' ? '医学 — 健康、营养、急救' : 'Medical — health, nutrition, first aid', value: 'medical' },
       { name: language === 'zh' ? '法律 — 合同、权益、法规' : 'Legal — contracts, rights, regulations', value: 'legal' },
       { name: language === 'zh' ? '心理 — 认知偏误、习惯、决策' : 'Psychology — cognitive biases, habits, decisions', value: 'psychology' },
+      { name: language === 'zh' ? '历史 — 文明、战争、革命、重大事件' : 'History — civilizations, wars, revolutions, key events', value: 'history' },
     ],
     validate: (input: string[]) => input.length > 0 || (language === 'zh' ? '至少选择一个类别' : 'Select at least 1 category'),
   }]);

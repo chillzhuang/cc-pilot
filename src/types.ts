@@ -108,7 +108,7 @@ export interface AppState {
 
 // ─── Knowledge System ───────────────────────────────────
 
-export type BuiltinCategoryId = 'tech' | 'english' | 'medical' | 'legal' | 'psychology';
+export type BuiltinCategoryId = 'tech' | 'english' | 'medical' | 'legal' | 'psychology' | 'history';
 
 export interface CustomCategory {
   id: string;
