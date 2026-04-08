@@ -3,7 +3,7 @@
  * Copyright (c) 2026-2099 BladeX (bladejava@qq.com)
  * Licensed under the MIT License
  */
-import { fork } from 'node:child_process';
+import { fork, execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync, existsSync } from 'node:fs';
@@ -35,10 +35,35 @@ export async function isDaemonRunningAsync(): Promise<boolean> {
   }
 }
 
+/**
+ * Kill any orphaned daemon-entry.js processes not tracked by state.json.
+ * Prevents duplicate daemons from accumulating across restarts.
+ */
+function killOrphanDaemons(trackedPid: number | null): void {
+  try {
+    const output = execSync(
+      'ps -eo pid,command | grep "daemon-entry.js" | grep -v grep',
+      { encoding: 'utf-8', timeout: 5000 },
+    ).trim();
+    if (!output) return;
+    for (const line of output.split('\n')) {
+      const pid = parseInt(line.trim().split(/\s+/)[0], 10);
+      if (!pid || pid === trackedPid || pid === process.pid) continue;
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch { /* already gone */ }
+    }
+  } catch { /* ps failed or no matches — fine */ }
+}
+
 export async function startDaemon(): Promise<number> {
   if (await isDaemonRunningAsync()) {
     throw new Error('DAEMON_ALREADY_RUNNING');
   }
+
+  // Kill any orphaned daemon processes before starting a new one
+  const state = await loadState();
+  killOrphanDaemons(state.daemon.pid);
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const daemonScript = resolve(__dirname, 'daemon-entry.js');
@@ -65,6 +90,8 @@ export async function stopDaemon(): Promise<void> {
   } catch {
     // Process already gone
   }
+  // Also kill any orphaned daemon processes
+  killOrphanDaemons(null);
   await updateDaemonState(null);
 }
 

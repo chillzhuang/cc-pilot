@@ -103,6 +103,14 @@ export class Scheduler {
     const state_key = `random-${task.name}`;
     const job = schedule.scheduleJob(state_key, targetTime, async () => {
       if (!this.running) return;
+      // Double-check: skip if the task already ran today (guards against duplicate daemons)
+      const state = await loadState();
+      const taskState = state.tasks[task.name];
+      if (taskState && taskState.todayRuns > 0) {
+        await logger.info(`SKIP  ${task.name} — already ran ${taskState.todayRuns} time(s) today`);
+        this.scheduleRandomNext(task);
+        return;
+      }
       await this.execute(task, task.prompt);
       // Reschedule for next matching day
       this.scheduleRandomNext(task);
