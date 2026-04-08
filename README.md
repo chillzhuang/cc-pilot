@@ -25,6 +25,8 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 - **Borderless Cyberpunk UI** — Section headers with decorative lines, no box borders
 - **Model Selection** — Choose your Claude model (`claude_model` config field, passed via `--model`)
 - **i18n** — English, 中文, Русский, Deutsch, Français
+- **Dynamic Prompt Engine** — Template × tech-term pool = 1,500+ unique prompts per locale, i18n-aware
+- **Version-Aware Daemon** — Auto-restarts daemon on package upgrade, no manual stop/start needed
 - **Daemon Process** — Background scheduling with system service registration
 - **Notifications** — DingTalk & Feishu webhook notifications on every task execution (success, error, rate-limited)
 - **Execution History & Logs** — Daily rolling logs, per-task history tracking
@@ -84,13 +86,13 @@ The wizard presents 3 default preset tasks:
   ━━━ ▸ DEFAULT TASKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     ● morning-activate   ── 07:00-08:00 random daily
-      prompt: (random from 100 built-in light prompts)
+      prompt: (dynamically generated tech prompt)
 
     ● noon-activate      ── 12:00-13:00 random daily
-      prompt: (random from 100 built-in light prompts)
+      prompt: (dynamically generated tech prompt)
 
     ● evening-activate   ── 17:00-18:00 random daily
-      prompt: (random from 100 built-in light prompts)
+      prompt: (dynamically generated tech prompt)
 
 ? Add a task? (use defaults above) Yes
 ? Working directory (for all default tasks): ~/projects/my-app
@@ -169,7 +171,7 @@ Select `[6] TEST` from the menu or run `cc-pilot tasks test` to immediately trig
 ```
   ▸ YOU  TASK morning-activate  CWD .  TIME 07:23:14
 
-    Good morning, write a simple bubble sort
+    What is the difference between React and Vue?
 
   ▸ CLAUDE
 
@@ -224,7 +226,7 @@ Trigger at a random time within a specified range. The 3 default preset tasks us
   type: random
   time_range: "07:00-08:00"        # Random time between 7:00-8:00
   days: "*"                         # Every day (* = all, 1-5 = weekdays)
-  prompt: "Good morning, write a simple bubble sort"
+  prompt: "auto"                       # empty / "auto" / "自动" = dynamically generated
   cwd: ~/projects/my-app
   enabled: true
 ```
@@ -296,17 +298,16 @@ global:
   language: en
   ui_size: medium
   theme: cyber
-  # prompt_pool:                   # optional: custom random prompts
-  #   - "Hello, how are you?"
-  #   - "Write a haiku"
-  #   - "Tell me a joke"
+  # prompt_pool:                   # optional: custom prompts (overrides dynamic generator)
+  #   - "Explain microservices briefly"
+  #   - "What is the CAP theorem?"
 
 tasks:
   - name: morning-activate
     type: random
     time_range: "07:00-08:00"
     days: "*"
-    prompt: ""                    # empty = random from built-in pool
+    prompt: ""                    # empty or "auto" = dynamic prompt generator
     cwd: ~/projects/my-app
     enabled: true
 
@@ -314,7 +315,7 @@ tasks:
     type: random
     time_range: "12:00-13:00"
     days: "*"
-    prompt: ""
+    prompt: "auto"                # "auto" / "自动" = same as empty
     cwd: ~/projects/my-app
     enabled: true
 
@@ -338,7 +339,7 @@ tasks:
 | `global.language` | Interface language: `en`, `zh`, `ru`, `de`, `fr` |
 | `global.ui_size` | Terminal UI panel size: `small`, `medium`, `large` |
 | `global.theme` | UI theme: `cyber`, `mono`, `neon`, `matrix`, `classic`, `vapor` (default: `cyber`) |
-| `global.prompt_pool` | Custom random prompt pool. If set, overrides built-in 100 prompts |
+| `global.prompt_pool` | Custom prompt pool. If set, overrides the built-in dynamic prompt generator |
 | `tasks[].name` | Unique task identifier |
 | `tasks[].type` | `fixed`, `random`, or `window` |
 | `tasks[].cwd` | Working directory for Claude Code execution |
@@ -591,7 +592,8 @@ src/
 │   ├── scheduler.ts     #   Main scheduling engine
 │   ├── executor.ts      #   Claude CLI invocation (--model support)
 │   ├── window.ts        #   5h window tracker
-│   ├── daemon.ts        #   Daemon lifecycle management
+│   ├── prompts.ts       #   Dynamic prompt generator (template × tech terms)
+│   ├── daemon.ts        #   Daemon lifecycle management (version-aware)
 │   └── daemon-entry.ts  #   Daemon process entry point
 ├── i18n/                # Internationalization
 │   ├── index.ts         #   t() function + locale loader

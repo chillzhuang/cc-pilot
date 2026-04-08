@@ -11,7 +11,7 @@ import type { AppState, HistoryEntry } from '../types.js';
 
 function defaultState(): AppState {
   return {
-    daemon: { pid: null, startedAt: null },
+    daemon: { pid: null, startedAt: null, version: null },
     window: { startedAt: null, endsAt: null, callsThisWindow: 0 },
     tasks: {},
     todayDate: dayjs().format('YYYY-MM-DD'),
@@ -52,10 +52,11 @@ export async function saveState(state: AppState): Promise<void> {
   await writeFile(STATE_PATH, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-export async function updateDaemonState(pid: number | null): Promise<void> {
+export async function updateDaemonState(pid: number | null, version?: string | null): Promise<void> {
   const state = await loadState();
   state.daemon.pid = pid;
   state.daemon.startedAt = pid ? dayjs().toISOString() : null;
+  state.daemon.version = pid ? (version ?? null) : null;
   await saveState(state);
 }
 

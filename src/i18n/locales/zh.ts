@@ -79,6 +79,7 @@ const zh: TranslationSchema = {
     invalidInput: '无效输入',
     openingConfig: '正在编辑器中打开配置...',
     daemonAutoStarted: '守护进程已自动启动',
+    daemonRestarted: '守护进程已重启（版本更新）',
     daemonStopped: '守护进程已停止',
     selectTarget: '选择目标',
     confirm: '确认操作？',

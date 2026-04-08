@@ -79,6 +79,7 @@ export interface Config {
 export interface DaemonState {
   pid: number | null;
   startedAt: string | null;
+  version: string | null;
 }
 
 export interface WindowState {

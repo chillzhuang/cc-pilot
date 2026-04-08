@@ -79,6 +79,7 @@ const ru: TranslationSchema = {
     invalidInput: 'Неверный ввод',
     openingConfig: 'Открытие конфигурации в редакторе...',
     daemonAutoStarted: 'Демон автозапущен',
+    daemonRestarted: 'Демон перезапущен (обновление версии)',
     daemonStopped: 'Демон остановлен',
     selectTarget: 'Выберите цель',
     confirm: 'Подтвердить действие?',

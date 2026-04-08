@@ -81,6 +81,7 @@ export interface TranslationSchema {
     invalidInput: string;
     openingConfig: string;
     daemonAutoStarted: string;
+    daemonRestarted: string;
     daemonStopped: string;
     selectTarget: string;
     confirm: string;

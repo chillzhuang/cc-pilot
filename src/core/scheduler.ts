@@ -7,7 +7,7 @@ import schedule from 'node-schedule';
 import dayjs from 'dayjs';
 import { loadConfig } from './config.js';
 import { executeTask } from './executor.js';
-import { pickRandomPrompt } from './prompts.js';
+import { pickRandomPrompt, isAutoPrompt } from './prompts.js';
 import { WindowTracker } from './window.js';
 import { recordExecution, loadState, saveState } from './state.js';
 import { appendHistory } from './state.js';
@@ -215,7 +215,9 @@ export class Scheduler {
 
   private async execute(task: Task, prompt: string): Promise<void> {
     // Resolve prompt: if empty, pick random from pool
-    const resolvedPrompt = prompt.trim() || pickRandomPrompt(this.config.global.promptPool);
+    const resolvedPrompt = isAutoPrompt(prompt)
+      ? pickRandomPrompt(this.config.global.promptPool, this.config.global.language)
+      : prompt.trim();
     await logger.info(`FIRE  ${task.name}`);
     await logger.info(`EXEC  claude -p "${resolvedPrompt.slice(0, 60)}..." --cwd ${task.cwd}`);
 

@@ -25,6 +25,8 @@ CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 
 - **无边框赛博朋克 UI** — 区块标题 + 装饰线条，无边框字符
 - **模型选择** — 可配置 Claude 模型（`claude_model` 字段，通过 `--model` 传递）
 - **多语言支持** — English、中文、Русский、Deutsch、Français
+- **动态 Prompt 引擎** — 模板 × 技术词汇池 = 1,500+ 种组合/语言，跟随界面语言自动切换
+- **版本感知守护进程** — 升级后进入菜单自动重启 daemon，无需手动 stop/start
 - **守护进程** — 后台调度 + 系统服务注册（开机自启）
 - **消息通知** — 钉钉 & 飞书 Webhook 通知，每次任务执行（成功、失败、限流）均推送
 - **执行历史与日志** — 按天滚动日志、任务级历史记录
@@ -84,13 +86,13 @@ cc-pilot
   ━━━ ▸ 默认任务 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     ● morning-activate   ── 07:00-08:00 每天随机
-      prompt: (从内置 100 个轻量 prompt 中随机)
+      prompt: (动态生成技术类 prompt)
 
     ● noon-activate      ── 12:00-13:00 每天随机
-      prompt: (从内置 100 个轻量 prompt 中随机)
+      prompt: (动态生成技术类 prompt)
 
     ● evening-activate   ── 17:00-18:00 每天随机
-      prompt: (从内置 100 个轻量 prompt 中随机)
+      prompt: (动态生成技术类 prompt)
 
 ? 使用以上默认任务？ 是
 ? 工作目录（所有默认任务）: ~/projects/my-app
@@ -224,7 +226,7 @@ CC-PILOT 支持三种调度模式，覆盖所有使用场景：
   type: random
   time_range: "07:00-08:00"        # 7:00-8:00 之间随机
   days: "*"                         # 每天（* = 每天, 1-5 = 工作日）
-  prompt: ""                    # 留空 = 从内置池随机
+  prompt: "自动"                # 留空 / "auto" / "自动" = 动态生成
   cwd: ~/projects/my-app
   enabled: true
 ```
@@ -296,17 +298,16 @@ global:
   language: zh
   ui_size: medium
   theme: cyber
-  # prompt_pool:                   # 可选：自定义随机 prompt 池
-  #   - "你好，今天心情怎么样？"
-  #   - "写一首小诗"
-  #   - "讲一个笑话"
+  # prompt_pool:                   # 可选：自定义 prompt 池（覆盖动态生成器）
+  #   - "简单介绍下微服务"
+  #   - "解释一下 CAP 定理"
 
 tasks:
   - name: morning-activate
     type: random
     time_range: "07:00-08:00"
     days: "*"
-    prompt: ""                    # 留空 = 从内置池随机
+    prompt: ""                    # 留空或填 "auto"/"自动" = 动态生成
     cwd: ~/projects/my-app
     enabled: true
 
@@ -314,7 +315,7 @@ tasks:
     type: random
     time_range: "12:00-13:00"
     days: "*"
-    prompt: ""
+    prompt: "自动"                # "auto"/"自动" = 等同于留空
     cwd: ~/projects/my-app
     enabled: true
 
@@ -338,7 +339,7 @@ tasks:
 | `global.language` | 界面语言：`en`、`zh`、`ru`、`de`、`fr` |
 | `global.ui_size` | 终端 UI 面板尺寸：`small`、`medium`、`large` |
 | `global.theme` | UI 主题：`cyber`、`mono`、`neon`、`matrix`、`classic`、`vapor`（默认：`cyber`） |
-| `global.prompt_pool` | 自定义随机 prompt 池，配置后覆盖内置 100 个 prompt |
+| `global.prompt_pool` | 自定义 prompt 池，配置后覆盖内置动态 prompt 生成器 |
 | `tasks[].name` | 任务唯一标识 |
 | `tasks[].type` | 任务类型：`fixed`、`random`、`window` |
 | `tasks[].cwd` | Claude Code 执行的工作目录 |
@@ -382,7 +383,7 @@ cc-pilot uninstall           # 移除系统开机自启服务
   ━━━ 实时日志  2026-04-07 ━━━━━━━━━ Ctrl+C 退出 ━━━━━━━━
 
   07:23:14 ▸ 触发   morning-activate
-  07:23:14 ▸ 执行   claude -p "早上好，写一个..." --model claude-sonnet-4-6
+  07:23:14 ▸ 执行   claude -p "简单介绍下 Docker..." --model claude-sonnet-4-6
   07:24:01 ▸ 完成   morning-activate  47s  1.8k
   07:24:01 ▸ 调度   下次: noon-activate @ 12:37
   12:37:22 ▸ 触发   noon-activate
@@ -591,7 +592,8 @@ src/
 │   ├── scheduler.ts     #   调度引擎
 │   ├── executor.ts      #   Claude CLI 调用（--model 支持）
 │   ├── window.ts        #   5h 窗口追踪器
-│   ├── daemon.ts        #   守护进程生命周期管理
+│   ├── prompts.ts       #   动态 Prompt 生成器（模板 × 技术词汇）
+│   ├── daemon.ts        #   守护进程生命周期管理（版本感知）
 │   └── daemon-entry.ts  #   守护进程入口
 ├── i18n/                # 国际化
 │   ├── index.ts         #   t() 函数 + 语言加载器

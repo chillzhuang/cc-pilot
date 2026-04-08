@@ -9,7 +9,7 @@ import { renderBanner } from './ui/banner.js';
 import { renderMenuItem, renderCategory } from './ui/render.js';
 import { T, setTheme, getThemeName, getAllThemes, gradient } from './ui/theme.js';
 import { t, setLocale, getLocale } from './i18n/index.js';
-import { isDaemonRunningAsync, getDaemonUptime, startDaemon } from './core/daemon.js';
+import { isDaemonRunningAsync, getDaemonUptime, getDaemonVersion, getCurrentVersion, startDaemon, restartDaemon } from './core/daemon.js';
 import { loadState, cleanupState } from './core/state.js';
 import { loadConfig, saveConfig, configExists, DEFAULT_GLOBAL } from './core/config.js';
 import { loadHistory } from './core/state.js';
@@ -256,11 +256,24 @@ export async function interactiveMenu(): Promise<void> {
     } catch { /* use default */ }
   }
 
-  if (configExists() && !(await isDaemonRunningAsync())) {
-    try {
-      const pid = await startDaemon();
-      console.log(T.primary(`  ${T.bullet} ${t('menu.daemonAutoStarted')} (PID: ${pid})\n`));
-    } catch { /* ignore if fails */ }
+  if (configExists()) {
+    const running = await isDaemonRunningAsync();
+    if (running) {
+      // Version mismatch → auto-restart daemon with new code
+      const daemonVer = await getDaemonVersion();
+      const currentVer = getCurrentVersion();
+      if (daemonVer && daemonVer !== currentVer) {
+        try {
+          const pid = await restartDaemon();
+          console.log(T.primary(`  ${T.bullet} ${t('menu.daemonRestarted')} v${daemonVer} → v${currentVer} (PID: ${pid})\n`));
+        } catch { /* ignore */ }
+      }
+    } else {
+      try {
+        const pid = await startDaemon();
+        console.log(T.primary(`  ${T.bullet} ${t('menu.daemonAutoStarted')} (PID: ${pid})\n`));
+      } catch { /* ignore if fails */ }
+    }
   }
 
   let running = true;

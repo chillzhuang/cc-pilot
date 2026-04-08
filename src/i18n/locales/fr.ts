@@ -79,6 +79,7 @@ const fr: TranslationSchema = {
     invalidInput: 'Entrée invalide',
     openingConfig: 'Ouverture de la config dans l\'éditeur...',
     daemonAutoStarted: 'Daemon démarré automatiquement',
+    daemonRestarted: 'Daemon redémarré (version mise à jour)',
     daemonStopped: 'Daemon arrêté',
     selectTarget: 'Selectionner la cible',
     confirm: 'Confirmer l\'action ?',

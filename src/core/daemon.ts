@@ -4,11 +4,21 @@
  * Licensed under the MIT License
  */
 import { fork, execSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { loadState, updateDaemonState } from './state.js';
+
+function getPackageVersion(): string {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = resolve(__dirname, '..', '..', 'package.json');
+  try {
+    return JSON.parse(readFileSync(pkgPath, 'utf-8')).version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
 
 export function isDaemonRunning(): boolean {
   try {
@@ -75,7 +85,7 @@ export async function startDaemon(): Promise<number> {
 
   child.unref();
   const pid = child.pid!;
-  await updateDaemonState(pid);
+  await updateDaemonState(pid, getPackageVersion());
   return pid;
 }
 
@@ -93,6 +103,20 @@ export async function stopDaemon(): Promise<void> {
   // Also kill any orphaned daemon processes
   killOrphanDaemons(null);
   await updateDaemonState(null);
+}
+
+export function getCurrentVersion(): string {
+  return getPackageVersion();
+}
+
+export async function getDaemonVersion(): Promise<string | null> {
+  const state = await loadState();
+  return state.daemon.version ?? null;
+}
+
+export async function restartDaemon(): Promise<number> {
+  try { await stopDaemon(); } catch { /* not running */ }
+  return startDaemon();
 }
 
 export async function getDaemonUptime(): Promise<number | null> {

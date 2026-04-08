@@ -79,6 +79,7 @@ const de: TranslationSchema = {
     invalidInput: 'Ungültige Eingabe',
     openingConfig: 'Konfiguration im Editor öffnen...',
     daemonAutoStarted: 'Daemon automatisch gestartet',
+    daemonRestarted: 'Daemon neugestartet (Version aktualisiert)',
     daemonStopped: 'Daemon gestoppt',
     selectTarget: 'Ziel auswählen',
     confirm: 'Aktion bestätigen?',
