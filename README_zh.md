@@ -1,6 +1,6 @@
 # CC-PILOT
 
-**Claude Code Auto Pilot** — 赛博朋克风格的智能会话调度器
+**Claude Code Auto Pilot** — 赛博朋克风格的 Claude Code 调度器 + 知识学习引擎
 
 **[English](README.md)** | **[中文文档](README_zh.md)**
 
@@ -13,7 +13,9 @@
 
 ---
 
-CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 对话**。它能智能触发 Claude Code 的 5 小时速率限制窗口——自动安排任务、检测限流、并推迟到下一个可用窗口执行。
+CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 对话**，同时也是一个**知识学习引擎**。它能智能触发 Claude Code 的 5 小时速率限制窗口，同时通过推送通知为你推送精选知识（技术、英语、医学、法律、心理学，以及自定义类别）。
+
+> **一举两得**：保持 Claude Code 5 小时窗口活跃，**同时**通过每次定时触发学习各领域知识。
 
 ## 核心特性
 
@@ -25,7 +27,9 @@ CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 
 - **无边框赛博朋克 UI** — 区块标题 + 装饰线条，无边框字符
 - **模型选择** — 可配置 Claude 模型（`claude_model` 字段，通过 `--model` 传递）
 - **多语言支持** — English、中文、Русский、Deutsch、Français
-- **动态 Prompt 引擎** — 模板 × 技术词汇池 = 1,500+ 种组合/语言，跟随界面语言自动切换
+- **知识学习模式** — 5 大内置类别（技术、英语、医学、法律、心理）+ 自定义类别，通过推送通知推送知识
+- **防重复引擎** — 洗牌迭代机制，每个类别约 150+ 个不重复问题周期，配合 AI 级近期话题提示
+- **动态 Prompt 引擎** — 模板 × 维度池 = 1,500+ 种组合/语言，跟随界面语言自动切换
 - **版本感知守护进程** — 升级后进入菜单自动重启 daemon，无需手动 stop/start
 - **守护进程** — 后台调度 + 系统服务注册（开机自启）
 - **消息通知** — 钉钉 & 飞书 Webhook 通知，每次任务执行（成功、失败、限流）均推送
@@ -60,6 +64,48 @@ cc-pilot
 4. 保存配置，**自动启动调度守护进程**，并进入交互式菜单
 
 一条命令搞定一切，无需额外执行 `start`。
+
+---
+
+## 知识学习
+
+CC-PILOT 同时也是一个智能**知识学习工具**。每次定时任务都会从你选择的知识类别中自动生成问题，通过推送通知（钉钉/飞书）推送给你碎片化的知识点。配置好你感兴趣的类别、开启通知，每次触发都能学到新知识——同时保持你的 Claude Code 窗口活跃。
+
+### 内置类别
+
+| 类别 | 涵盖主题 |
+|------|----------|
+| **技术** | 编程语言、框架、DevOps、数据库、协议 |
+| **英语** | 词汇、习语、语法、发音、学术写作 |
+| **医学** | 营养、睡眠科学、急救、运动、心理健康 |
+| **法律** | 合同、消费者权益、劳动法、隐私、知识产权 |
+| **心理** | 认知偏误、习惯养成、动机、压力管理 |
+
+### 防重复保证
+
+每个类别的所有 `维度 × 模板` 组合（约 120-200 个/类别）被洗牌后排成队列。系统按顺序迭代，**保证在一个完整周期内零重复**。同时将近期话题作为上下文提示传递给 AI，进一步提升多样性。
+
+### 自定义类别
+
+通过名称和描述添加你自己的类别，系统会自动生成针对性的 prompt：
+
+```yaml
+global:
+  knowledge_categories:
+    - tech
+    - medical
+    - cooking           # 自定义类别
+  custom_categories:
+    - id: cooking
+      name: 烹饪与食谱
+      description: 家常烹饪技巧、食材知识、食品科学
+```
+
+### 配置方式
+
+通过交互式菜单 `[K]` 键、`cc-pilot knowledge` 命令、或直接编辑 `config.yml`。
+
+**使用场景示例**：选择医学 + 英语类别，开启钉钉通知，每天通过推送通知接收 3 个知识点——同时保持 Claude Code 窗口活跃。
 
 ---
 
@@ -155,6 +201,7 @@ cc-pilot
   [20] 关停  ── 停止守护进程并退出
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+  [K] 知识  ── 知识学习类别配置
   [L] 语言  ── EN | 中文 | РУС | DE | FR
   [T] 主题  ── cyber | mono | neon | matrix | classic | vapor
   [X] 关于  ── 作者与项目信息
@@ -298,9 +345,13 @@ global:
   language: zh
   ui_size: medium
   theme: cyber
-  # prompt_pool:                   # 可选：自定义 prompt 池（覆盖动态生成器）
-  #   - "简单介绍下微服务"
-  #   - "解释一下 CAP 定理"
+  knowledge_categories:            # 启用的知识类别
+    - tech
+  # custom_categories:             # 可选：自定义类别
+  #   - id: cooking
+  #     name: 烹饪与食谱
+  #     description: 家常烹饪技巧、食材知识
+  # prompt_pool:                   # 可选：自定义 prompt 池（覆盖所有生成器）
 
 tasks:
   - name: morning-activate
@@ -340,6 +391,8 @@ tasks:
 | `global.ui_size` | 终端 UI 面板尺寸：`small`、`medium`、`large` |
 | `global.theme` | UI 主题：`cyber`、`mono`、`neon`、`matrix`、`classic`、`vapor`（默认：`cyber`） |
 | `global.prompt_pool` | 自定义 prompt 池，配置后覆盖内置动态 prompt 生成器 |
+| `global.knowledge_categories` | 启用的知识类别：`tech`、`english`、`medical`、`legal`、`psychology` 或自定义 ID（默认：`['tech']`）|
+| `global.custom_categories` | 用户自定义知识类别（`{id, name, description}` 数组）|
 | `tasks[].name` | 任务唯一标识 |
 | `tasks[].type` | 任务类型：`fixed`、`random`、`window` |
 | `tasks[].cwd` | Claude Code 执行的工作目录 |
@@ -364,6 +417,8 @@ cc-pilot tasks remove        # 删除任务
 cc-pilot tasks toggle        # 启用/禁用任务
 cc-pilot tasks test          # 触发任务并实时查看响应
 cc-pilot tasks history       # 查看任务执行历史
+
+cc-pilot knowledge           # 配置知识学习类别
 
 cc-pilot log                 # 查看今日执行日志
 cc-pilot log -n 50           # 查看最近 50 行日志
@@ -577,22 +632,24 @@ src/
 ├── index.ts             # CLI 入口（Commander.js）
 ├── menu.ts              # 赛博朋克交互式菜单
 ├── types.ts             # 共享类型定义
-├── commands/            # 8 个命令模块
+├── commands/            # 9 个命令模块
 │   ├── init.ts          #   首次运行向导 + 配置初始化
 │   ├── start.ts         #   启动守护进程
 │   ├── stop.ts          #   停止守护进程
 │   ├── status.ts        #   运行状态面板
 │   ├── tasks.ts         #   任务增删改查 + 测试 + 历史
+│   ├── knowledge.ts     #   知识类别配置
 │   ├── log.ts           #   执行日志查看器
 │   ├── window.ts        #   窗口状态监控
 │   └── install.ts       #   系统服务注册
-├── core/                # 7 个核心模块
+├── core/                # 8 个核心模块
 │   ├── config.ts        #   YAML 配置加载/保存
 │   ├── state.ts         #   运行时状态持久化
 │   ├── scheduler.ts     #   调度引擎
 │   ├── executor.ts      #   Claude CLI 调用（--model 支持）
 │   ├── window.ts        #   5h 窗口追踪器
-│   ├── prompts.ts       #   动态 Prompt 生成器（模板 × 技术词汇）
+│   ├── knowledge.ts     #   知识类别引擎（5 大内置 + 自定义）
+│   ├── prompts.ts       #   动态 Prompt 生成器（模板 × 维度）
 │   ├── daemon.ts        #   守护进程生命周期管理（版本感知）
 │   └── daemon-entry.ts  #   守护进程入口
 ├── i18n/                # 国际化

@@ -15,6 +15,7 @@ function defaultState(): AppState {
     window: { startedAt: null, endsAt: null, callsThisWindow: 0 },
     tasks: {},
     todayDate: dayjs().format('YYYY-MM-DD'),
+    knowledge: { categories: {} },
   };
 }
 
@@ -29,6 +30,10 @@ export async function loadState(): Promise<AppState> {
         data.tasks[key].todayTokens = 0;
       }
       data.todayDate = dayjs().format('YYYY-MM-DD');
+    }
+    // Migration guard: older state files lack knowledge field
+    if (!data.knowledge) {
+      data.knowledge = { categories: {} };
     }
     return data;
   } catch {

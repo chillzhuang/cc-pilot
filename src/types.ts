@@ -51,6 +51,8 @@ export interface GlobalConfig {
   uiSize: UISize;
   theme: ThemeName;
   promptPool: string[];
+  knowledgeCategories: string[];
+  customCategories: CustomCategory[];
 }
 
 export interface DingtalkConfig {
@@ -100,6 +102,27 @@ export interface AppState {
   window: WindowState;
   tasks: Record<string, TaskRunRecord>;
   todayDate: string;
+  knowledge: KnowledgeState;
+}
+
+// ─── Knowledge System ───────────────────────────────────
+
+export type BuiltinCategoryId = 'tech' | 'english' | 'medical' | 'legal' | 'psychology';
+
+export interface CustomCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface KnowledgeCategoryState {
+  shuffledIndices: number[];
+  cursor: number;
+  recentDimensions: string[];
+}
+
+export interface KnowledgeState {
+  categories: Record<string, KnowledgeCategoryState>;
 }
 
 // ─── Execution ───────────────────────────────────────────

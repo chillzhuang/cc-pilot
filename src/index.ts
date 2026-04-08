@@ -20,6 +20,7 @@ import {
 import { logCommand } from './commands/log.js';
 import { windowCommand } from './commands/window.js';
 import { installCommand, uninstallCommand } from './commands/install.js';
+import { knowledgeCommand } from './commands/knowledge.js';
 import { ensureDirs } from './utils/paths.js';
 import { loadConfig, configExists } from './core/config.js';
 import { setLocale } from './i18n/index.js';
@@ -84,6 +85,11 @@ program
   .command('window')
   .description('Show window state')
   .action(windowCommand);
+
+program
+  .command('knowledge')
+  .description('Configure knowledge learning categories')
+  .action(knowledgeCommand);
 
 program
   .command('install')

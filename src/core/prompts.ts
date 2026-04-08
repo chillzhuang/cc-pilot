@@ -3,7 +3,8 @@
  * Copyright (c) 2026-2099 BladeX (bladejava@qq.com)
  * Licensed under the MIT License
  */
-import type { Locale } from '../types.js';
+import type { Locale, CustomCategory, KnowledgeState } from '../types.js';
+import { pickKnowledgePrompt } from './knowledge.js';
 
 // ─── Dynamic Prompt Generator ──────────────────────────
 // Template + variable pool = massive combinatorial variety.
@@ -289,12 +290,35 @@ function generate(locale: Locale): string {
   return pick(tpl.pair).replace('{A}', a).replace('{B}', b);
 }
 
+// ─── Public API ───────────────────────────────────────────
+
+export interface PromptResult {
+  prompt: string;
+  knowledgeState?: KnowledgeState;
+}
+
 /**
- * Pick a random prompt from the given pool, or generate one dynamically.
+ * Pick a random prompt.
+ * Priority: customPool > knowledgeCategories > legacy fallback.
  */
-export function pickRandomPrompt(customPool?: string[], locale: Locale = 'en'): string {
+export function pickRandomPrompt(
+  customPool?: string[],
+  locale: Locale = 'en',
+  knowledgeCategories?: string[],
+  customCategories?: CustomCategory[],
+  knowledgeState?: KnowledgeState,
+): PromptResult {
+  // 1. Custom pool takes highest priority (backward compatible)
   if (customPool && customPool.length > 0) {
-    return customPool[Math.floor(Math.random() * customPool.length)];
+    return { prompt: customPool[Math.floor(Math.random() * customPool.length)] };
   }
-  return generate(locale);
+
+  // 2. Knowledge category system
+  if (knowledgeCategories && knowledgeCategories.length > 0 && knowledgeState) {
+    const result = pickKnowledgePrompt(knowledgeState, knowledgeCategories, customCategories ?? [], locale);
+    return { prompt: result.prompt, knowledgeState: result.updatedState };
+  }
+
+  // 3. Legacy fallback — original combinatorial tech prompts
+  return { prompt: generate(locale) };
 }

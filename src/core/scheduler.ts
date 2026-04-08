@@ -214,10 +214,25 @@ export class Scheduler {
   }
 
   private async execute(task: Task, prompt: string): Promise<void> {
-    // Resolve prompt: if empty, pick random from pool
-    const resolvedPrompt = isAutoPrompt(prompt)
-      ? pickRandomPrompt(this.config.global.promptPool, this.config.global.language)
-      : prompt.trim();
+    // Resolve prompt: if empty, pick from knowledge system or pool
+    let resolvedPrompt: string;
+    if (isAutoPrompt(prompt)) {
+      const state = await loadState();
+      const result = pickRandomPrompt(
+        this.config.global.promptPool,
+        this.config.global.language,
+        this.config.global.knowledgeCategories,
+        this.config.global.customCategories,
+        state.knowledge,
+      );
+      resolvedPrompt = result.prompt;
+      if (result.knowledgeState) {
+        state.knowledge = result.knowledgeState;
+        await saveState(state);
+      }
+    } else {
+      resolvedPrompt = prompt.trim();
+    }
     await logger.info(`FIRE  ${task.name}`);
     await logger.info(`EXEC  claude -p "${resolvedPrompt.slice(0, 60)}..." --cwd ${task.cwd}`);
 

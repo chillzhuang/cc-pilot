@@ -140,6 +140,21 @@ export async function firstRunSetup(): Promise<void> {
 
   setTheme(theme as ThemeName);
 
+  // Knowledge categories
+  const { categories } = await inquirer.prompt([{
+    type: 'checkbox',
+    name: 'categories',
+    message: language === 'zh' ? '选择知识学习类别:' : 'Select knowledge categories:',
+    choices: [
+      { name: language === 'zh' ? '技术 — 编程、技术、DevOps' : 'Tech — programming, technology, DevOps', value: 'tech', checked: true },
+      { name: language === 'zh' ? '英语 — 词汇、语法、习语' : 'English — vocabulary, grammar, idioms', value: 'english' },
+      { name: language === 'zh' ? '医学 — 健康、营养、急救' : 'Medical — health, nutrition, first aid', value: 'medical' },
+      { name: language === 'zh' ? '法律 — 合同、权益、法规' : 'Legal — contracts, rights, regulations', value: 'legal' },
+      { name: language === 'zh' ? '心理 — 认知偏误、习惯、决策' : 'Psychology — cognitive biases, habits, decisions', value: 'psychology' },
+    ],
+    validate: (input: string[]) => input.length > 0 || (language === 'zh' ? '至少选择一个类别' : 'Select at least 1 category'),
+  }]);
+
   // Show default tasks and ask if user wants them
   console.log('');
   console.log(renderSection(`▸ ${t('init.defaultTasks')}`, [
@@ -254,6 +269,8 @@ export async function firstRunSetup(): Promise<void> {
       theme: theme as ThemeName,
       language: language as Locale,
       promptPool: [],
+      knowledgeCategories: categories as string[],
+      customCategories: [],
     },
     notify: {
       dingtalk: { token: '', enabled: false },

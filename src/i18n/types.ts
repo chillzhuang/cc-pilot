@@ -67,6 +67,8 @@ export interface TranslationSchema {
     dingtalkDesc: string;
     feishu: string;
     feishuDesc: string;
+    knowledge: string;
+    knowledgeDesc: string;
 
     // About page content
     aboutBlade: string;
@@ -216,6 +218,35 @@ export interface TranslationSchema {
     notConfigured: string;
     feishuConfigTitle: string;
     feishuTokenPrompt: string;
+  };
+
+  knowledge: {
+    catTech: string;
+    catTechDesc: string;
+    catEnglish: string;
+    catEnglishDesc: string;
+    catMedical: string;
+    catMedicalDesc: string;
+    catLegal: string;
+    catLegalDesc: string;
+    catPsychology: string;
+    catPsychologyDesc: string;
+    selectCategories: string;
+    manageCustom: string;
+    resetProgress: string;
+    resetConfirm: string;
+    resetDone: string;
+    addCustom: string;
+    removeCustom: string;
+    customId: string;
+    customName: string;
+    customDesc: string;
+    customAdded: string;
+    customRemoved: string;
+    noCustom: string;
+    minOneCategory: string;
+    categoriesSaved: string;
+    actionSelect: string;
   };
 
   common: {

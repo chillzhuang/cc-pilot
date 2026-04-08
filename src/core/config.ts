@@ -7,7 +7,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { parse, stringify } from 'yaml';
 import { CONFIG_PATH, ensureDirs } from '../utils/paths.js';
-import type { Config, Task, Locale, UISize, ThemeName, GlobalConfig } from '../types.js';
+import type { Config, Task, Locale, UISize, ThemeName, GlobalConfig, CustomCategory } from '../types.js';
 
 const DEFAULT_GLOBAL: GlobalConfig = {
   claudePath: 'claude',
@@ -19,6 +19,8 @@ const DEFAULT_GLOBAL: GlobalConfig = {
   uiSize: 'medium',
   theme: 'cyber',
   promptPool: [],
+  knowledgeCategories: ['tech'],
+  customCategories: [],
 };
 
 const DEFAULT_NOTIFY = {
@@ -91,6 +93,12 @@ export async function loadConfig(): Promise<Config> {
       uiSize: (globalRaw.ui_size ?? globalRaw.uiSize ?? DEFAULT_GLOBAL.uiSize) as UISize,
       theme: (globalRaw.theme ?? DEFAULT_GLOBAL.theme) as ThemeName,
       promptPool: (globalRaw.prompt_pool ?? globalRaw.promptPool ?? DEFAULT_GLOBAL.promptPool) as string[],
+      knowledgeCategories: (globalRaw.knowledge_categories ?? globalRaw.knowledgeCategories ?? DEFAULT_GLOBAL.knowledgeCategories) as string[],
+      customCategories: ((globalRaw.custom_categories ?? globalRaw.customCategories ?? DEFAULT_GLOBAL.customCategories) as Array<Record<string, unknown>>).map(c => ({
+        id: c.id as string,
+        name: c.name as string,
+        description: (c.description ?? '') as string,
+      })),
     },
     notify: {
       dingtalk: {
@@ -119,6 +127,10 @@ export async function saveConfig(config: Config): Promise<void> {
       ui_size: config.global.uiSize,
       theme: config.global.theme,
       prompt_pool: config.global.promptPool.length > 0 ? config.global.promptPool : undefined,
+      knowledge_categories: config.global.knowledgeCategories.length > 0 ? config.global.knowledgeCategories : undefined,
+      custom_categories: config.global.customCategories.length > 0
+        ? config.global.customCategories.map(c => ({ id: c.id, name: c.name, description: c.description }))
+        : undefined,
     },
     notify: {
       dingtalk: {

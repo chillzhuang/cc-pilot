@@ -1,6 +1,6 @@
 # CC-PILOT
 
-**Claude Code Auto Pilot** — Cyberpunk-styled intelligent conversation scheduler
+**Claude Code Auto Pilot** — Cyberpunk-styled Claude Code scheduler with built-in knowledge learning
 
 **[English](README.md)** | **[中文文档](README_zh.md)**
 
@@ -13,7 +13,9 @@
 
 ---
 
-CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code conversations** on a timer. It maximizes your Claude Code usage by intelligently managing the 5-hour rate-limit window — auto-scheduling tasks, detecting rate limits, and deferring to the next available window.
+CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code conversations** on a timer — and doubles as a **knowledge learning engine**. It maximizes your Claude Code usage by intelligently managing the 5-hour rate-limit window, while delivering bite-sized knowledge from selected categories (Tech, English, Medical, Legal, Psychology, or your own custom topics) via push notifications.
+
+> **Two birds, one stone**: Keep your Claude Code 5-hour window active **and** learn domain knowledge through every scheduled trigger.
 
 ## Features
 
@@ -25,7 +27,9 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 - **Borderless Cyberpunk UI** — Section headers with decorative lines, no box borders
 - **Model Selection** — Choose your Claude model (`claude_model` config field, passed via `--model`)
 - **i18n** — English, 中文, Русский, Deutsch, Français
-- **Dynamic Prompt Engine** — Template × tech-term pool = 1,500+ unique prompts per locale, i18n-aware
+- **Knowledge Learning Mode** — 5 built-in categories (Tech, English, Medical, Legal, Psychology) + custom categories, delivered via push notifications
+- **Anti-Repeat Engine** — Shuffle-and-iterate guarantees ~150+ unique questions per category before any repeat, with AI-level recency hints
+- **Dynamic Prompt Engine** — Template × dimension pool = 1,500+ unique prompts per locale, i18n-aware
 - **Version-Aware Daemon** — Auto-restarts daemon on package upgrade, no manual stop/start needed
 - **Daemon Process** — Background scheduling with system service registration
 - **Notifications** — DingTalk & Feishu webhook notifications on every task execution (success, error, rate-limited)
@@ -60,6 +64,48 @@ That's it. On first run, CC-PILOT will:
 4. Save config, **auto-start the scheduling daemon**, and enter the interactive menu
 
 Everything is handled in a single command — no separate `start` step needed.
+
+---
+
+## Knowledge Learning
+
+CC-PILOT doubles as an intelligent **knowledge-learning tool**. Each scheduled task can automatically generate questions from multiple knowledge categories, delivering bite-sized lessons via push notifications (DingTalk / Feishu). Configure your preferred categories, enable notifications, and learn something new with every trigger — all while keeping your Claude Code window active.
+
+### Built-in Categories
+
+| Category | Topics |
+|----------|--------|
+| **Tech** | Programming languages, frameworks, DevOps, databases, protocols |
+| **English** | Vocabulary, idioms, grammar, pronunciation, academic writing |
+| **Medical** | Nutrition, sleep science, first aid, exercise, mental health |
+| **Legal** | Contracts, consumer rights, employment law, privacy, IP |
+| **Psychology** | Cognitive biases, habits, motivation, stress management |
+
+### Anti-Repeat Guarantee
+
+For each category, all `dimension × template` combinations (~120-200 per category) are shuffled into a queue. The system iterates sequentially through the queue, **guaranteeing no repetition within a full cycle**. Recent topics are also passed as context hints to the AI for additional diversity.
+
+### Custom Categories
+
+Add your own categories by name and description — the system generates targeted prompts automatically:
+
+```yaml
+global:
+  knowledge_categories:
+    - tech
+    - medical
+    - cooking           # custom category
+  custom_categories:
+    - id: cooking
+      name: Cooking & Recipes
+      description: Home cooking techniques, ingredients, and food science
+```
+
+### Configuration
+
+Select categories via the interactive menu `[K]` key, `cc-pilot knowledge` command, or edit `config.yml` directly.
+
+**Example use case**: Select Medical + English, enable DingTalk notifications, and receive 3 knowledge points per day via push notifications — while keeping your Claude Code window active.
 
 ---
 
@@ -155,6 +201,7 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
   [20] SHUTDOWN  ── Stop daemon and exit
 
   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+  [K] KNOWLEDGE  ── Knowledge learning categories
   [L] LANG   ── EN | 中文 | РУС | DE | FR
   [T] THEME  ── cyber | mono | neon | matrix | classic | vapor
   [X] ABOUT  ── Author & project info
@@ -298,9 +345,13 @@ global:
   language: en
   ui_size: medium
   theme: cyber
-  # prompt_pool:                   # optional: custom prompts (overrides dynamic generator)
-  #   - "Explain microservices briefly"
-  #   - "What is the CAP theorem?"
+  knowledge_categories:            # enabled knowledge categories
+    - tech
+  # custom_categories:             # optional: user-defined categories
+  #   - id: cooking
+  #     name: Cooking & Recipes
+  #     description: Home cooking techniques
+  # prompt_pool:                   # optional: custom prompts (overrides everything)
 
 tasks:
   - name: morning-activate
@@ -340,6 +391,8 @@ tasks:
 | `global.ui_size` | Terminal UI panel size: `small`, `medium`, `large` |
 | `global.theme` | UI theme: `cyber`, `mono`, `neon`, `matrix`, `classic`, `vapor` (default: `cyber`) |
 | `global.prompt_pool` | Custom prompt pool. If set, overrides the built-in dynamic prompt generator |
+| `global.knowledge_categories` | Enabled knowledge categories: `tech`, `english`, `medical`, `legal`, `psychology`, or custom IDs (default: `['tech']`) |
+| `global.custom_categories` | User-defined custom knowledge categories (array of `{id, name, description}`) |
 | `tasks[].name` | Unique task identifier |
 | `tasks[].type` | `fixed`, `random`, or `window` |
 | `tasks[].cwd` | Working directory for Claude Code execution |
@@ -364,6 +417,8 @@ cc-pilot tasks remove        # Remove a task
 cc-pilot tasks toggle        # Enable/disable a task
 cc-pilot tasks test          # Trigger a task with live response view
 cc-pilot tasks history       # View task execution history
+
+cc-pilot knowledge           # Configure knowledge learning categories
 
 cc-pilot log                 # View today's execution log
 cc-pilot log -n 50           # View last 50 log lines
@@ -577,22 +632,24 @@ src/
 ├── index.ts             # CLI entry point (Commander.js)
 ├── menu.ts              # Interactive cyberpunk menu
 ├── types.ts             # Shared type definitions
-├── commands/            # 8 command modules
+├── commands/            # 9 command modules
 │   ├── init.ts          #   First-run wizard + configuration setup
 │   ├── start.ts         #   Start daemon
 │   ├── stop.ts          #   Stop daemon
 │   ├── status.ts        #   Runtime status panel
 │   ├── tasks.ts         #   Task CRUD + test + history
+│   ├── knowledge.ts     #   Knowledge category settings
 │   ├── log.ts           #   Execution log viewer
 │   ├── window.ts        #   Window state monitor
 │   └── install.ts       #   System service registration
-├── core/                # 7 core modules
+├── core/                # 8 core modules
 │   ├── config.ts        #   YAML config loader/saver
 │   ├── state.ts         #   Runtime state persistence
 │   ├── scheduler.ts     #   Main scheduling engine
 │   ├── executor.ts      #   Claude CLI invocation (--model support)
 │   ├── window.ts        #   5h window tracker
-│   ├── prompts.ts       #   Dynamic prompt generator (template × tech terms)
+│   ├── knowledge.ts     #   Knowledge category engine (5 built-in + custom)
+│   ├── prompts.ts       #   Dynamic prompt generator (template × dimensions)
 │   ├── daemon.ts        #   Daemon lifecycle management (version-aware)
 │   └── daemon-entry.ts  #   Daemon process entry point
 ├── i18n/                # Internationalization

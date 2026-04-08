@@ -5,7 +5,7 @@
  */
 import inquirer from 'inquirer';
 import { loadConfig, addTask, removeTask, toggleTask } from '../core/config.js';
-import { loadState, getTaskHistory } from '../core/state.js';
+import { loadState, saveState, getTaskHistory } from '../core/state.js';
 import { executeTask } from '../core/executor.js';
 import { pickRandomPrompt, isAutoPrompt } from '../core/prompts.js';
 import { appendHistory, recordExecution } from '../core/state.js';
@@ -174,9 +174,25 @@ export async function tasksTestCommand(): Promise<void> {
   const rawPrompt = task.type === 'window'
     ? task.prompts[Math.floor(Math.random() * task.prompts.length)]
     : task.prompt;
-  const prompt = isAutoPrompt(rawPrompt)
-    ? pickRandomPrompt(config.global.promptPool, config.global.language)
-    : rawPrompt.trim();
+
+  let prompt: string;
+  if (isAutoPrompt(rawPrompt)) {
+    const state = await loadState();
+    const result = pickRandomPrompt(
+      config.global.promptPool,
+      config.global.language,
+      config.global.knowledgeCategories,
+      config.global.customCategories,
+      state.knowledge,
+    );
+    prompt = result.prompt;
+    if (result.knowledgeState) {
+      state.knowledge = result.knowledgeState;
+      await saveState(state);
+    }
+  } else {
+    prompt = rawPrompt.trim();
+  }
 
   // Show prompt
   console.log('');

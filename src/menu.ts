@@ -29,6 +29,7 @@ import { windowCommand } from './commands/window.js';
 import { installCommand, uninstallCommand } from './commands/install.js';
 import { aboutCommand } from './commands/about.js';
 import { dingtalkCommand, feishuCommand } from './commands/notify.js';
+import { knowledgeCommand } from './commands/knowledge.js';
 
 // ─── Readline helper ─────────────────────────────────────
 
@@ -104,6 +105,7 @@ function renderMenu(): string {
   lines.push(renderMenuItem(20, t('menu.shutdown'), t('menu.shutdownDesc')));
   lines.push('');
   lines.push(T.dim(`  ${T.separator.repeat(48)}`));
+  lines.push(renderMenuItem('K', t('menu.knowledge'), t('menu.knowledgeDesc')));
   lines.push(renderMenuItem('L', t('menu.lang'), t('menu.langDesc')));
   lines.push(renderMenuItem('T', t('menu.theme'), t('menu.themeDesc')));
   lines.push(renderMenuItem('X', t('menu.about'), t('menu.aboutDesc')));
@@ -154,6 +156,11 @@ async function handleInput(input: string): Promise<boolean> {
       } catch { /* already stopped */ }
     }
     return false;
+  }
+
+  if (cmd === 'k' || cmd === 'knowledge') {
+    await knowledgeCommand();
+    return true;
   }
 
   if (cmd === 'l' || cmd === 'lang') {
