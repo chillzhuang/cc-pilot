@@ -5,6 +5,7 @@
  */
 import inquirer from 'inquirer';
 import { loadConfig, addTask, removeTask, toggleTask } from '../core/config.js';
+import { getBuiltinCategoryIds } from '../core/knowledge.js';
 import { loadState, saveState, getTaskHistory } from '../core/state.js';
 import { executeTask } from '../core/executor.js';
 import { pickRandomPrompt, isAutoPrompt } from '../core/prompts.js';
@@ -61,6 +62,8 @@ export async function tasksListCommand(): Promise<void> {
 // ─── Add ─────────────────────────────────────────────────
 
 export async function tasksAddCommand(): Promise<void> {
+  const config = await loadConfig();
+
   const { name } = await inquirer.prompt([{ type: 'input', name: 'name', message: t('init.taskName') }]);
   const { type } = await inquirer.prompt([{
     type: 'list', name: 'type', message: t('init.taskType'),
@@ -74,17 +77,42 @@ export async function tasksAddCommand(): Promise<void> {
 
   let task: Task;
   if (type === 'fixed') {
-    const { cron } = await inquirer.prompt([{ type: 'input', name: 'cron', message: t('init.taskCron'), default: '30 17 * * *' }]);
-    const { prompt } = await inquirer.prompt([{ type: 'input', name: 'prompt', message: t('init.taskPrompt') }]);
-    task = { name, type, cron, prompt, cwd, enabled: true };
+    const { cron } = await inquirer.prompt([{
+      type: 'input', name: 'cron',
+      message: `${t('init.taskCron')} ${T.dim('(min hour dom mon dow)')}`,
+      default: '30 17 * * *',
+      suffix: T.dim('  e.g. "0 9 * * 1-5" = weekdays 9:00, "*/30 * * * *" = every 30min'),
+    }]);
+    const { prompt } = await promptWithCategory(config);
+    task = { name, type, cron, prompt: prompt.text, cwd, enabled: true, ...(prompt.categories ? { promptCategories: prompt.categories } : {}) };
   } else if (type === 'random') {
-    const { timeRange } = await inquirer.prompt([{ type: 'input', name: 'timeRange', message: t('init.taskTimeRange'), default: '07:00-08:00' }]);
-    const { days } = await inquirer.prompt([{ type: 'input', name: 'days', message: t('init.taskDays'), default: '*' }]);
-    const { prompt } = await inquirer.prompt([{ type: 'input', name: 'prompt', message: t('init.taskPrompt') }]);
-    task = { name, type, timeRange, days, prompt, cwd, enabled: true };
+    const { timeRange } = await inquirer.prompt([{
+      type: 'input', name: 'timeRange',
+      message: `${t('init.taskTimeRange')} ${T.dim('(HH:MM-HH:MM)')}`,
+      default: '07:00-08:00',
+      suffix: T.dim('  e.g. "09:00-10:00", "18:00-19:30"'),
+    }]);
+    const { days } = await inquirer.prompt([{
+      type: 'input', name: 'days',
+      message: `${t('init.taskDays')} ${T.dim('(* = daily)')}`,
+      default: '*',
+      suffix: T.dim('  e.g. "*" = daily, "1-5" = Mon-Fri, "0,6" = weekends'),
+    }]);
+    const { prompt } = await promptWithCategory(config);
+    task = { name, type, timeRange, days, prompt: prompt.text, cwd, enabled: true, ...(prompt.categories ? { promptCategories: prompt.categories } : {}) };
   } else {
-    const { activeHours } = await inquirer.prompt([{ type: 'input', name: 'activeHours', message: t('init.taskActiveHours'), default: '08:00-23:00' }]);
-    const { triggerOffset } = await inquirer.prompt([{ type: 'input', name: 'triggerOffset', message: t('init.taskOffset'), default: '0-60m' }]);
+    const { activeHours } = await inquirer.prompt([{
+      type: 'input', name: 'activeHours',
+      message: `${t('init.taskActiveHours')} ${T.dim('(HH:MM-HH:MM)')}`,
+      default: '08:00-23:00',
+      suffix: T.dim('  e.g. "08:00-23:00", "06:00-22:00"'),
+    }]);
+    const { triggerOffset } = await inquirer.prompt([{
+      type: 'input', name: 'triggerOffset',
+      message: `${t('init.taskOffset')} ${T.dim('(N-Nm)')}`,
+      default: '0-60m',
+      suffix: T.dim('  e.g. "0-60m" = 0~60min random, "10-30m"'),
+    }]);
     const prompts: string[] = [];
     let addMore = true;
     while (addMore) {
@@ -98,6 +126,44 @@ export async function tasksAddCommand(): Promise<void> {
 
   await addTask(task);
   console.log(T.success(`✓ Task "${name}" added`));
+}
+
+// ─── Prompt with category binding ───────────────────────
+
+async function promptWithCategory(config: { global: { knowledgeCategories: string[]; customCategories: { id: string; name: string }[] } }): Promise<{ prompt: { text: string; categories?: string[] } }> {
+  const { promptType } = await inquirer.prompt([{
+    type: 'list', name: 'promptType',
+    message: t('init.taskPrompt'),
+    choices: [
+      { name: `${T.accent('auto')}  ${T.dim('── ' + t('task.autoPromptDesc'))}`, value: 'auto' },
+      { name: `${T.accent('auto + categories')}  ${T.dim('── ' + t('task.autoCategoryDesc'))}`, value: 'auto-category' },
+      { name: `${T.accent('custom')}  ${T.dim('── ' + t('task.customPromptDesc'))}`, value: 'custom' },
+    ],
+  }]);
+
+  if (promptType === 'custom') {
+    const { text } = await inquirer.prompt([{ type: 'input', name: 'text', message: 'Prompt:' }]);
+    return { prompt: { text } };
+  }
+
+  if (promptType === 'auto-category') {
+    const builtinIds = getBuiltinCategoryIds();
+    const allIds = [...builtinIds, ...config.global.customCategories.map(c => c.id)];
+    const { selected } = await inquirer.prompt([{
+      type: 'checkbox', name: 'selected',
+      message: t('knowledge.selectCategories'),
+      choices: allIds.map(id => {
+        const custom = config.global.customCategories.find(c => c.id === id);
+        const label = custom ? custom.name : t(`knowledge.cat${id.charAt(0).toUpperCase() + id.slice(1)}`);
+        return { name: label, value: id, checked: config.global.knowledgeCategories.includes(id) };
+      }),
+      validate: (input: string[]) => input.length > 0 || t('knowledge.minOneCategory'),
+    }]);
+    return { prompt: { text: 'auto', categories: selected } };
+  }
+
+  // auto — use global categories
+  return { prompt: { text: 'auto' } };
 }
 
 // ─── Edit ────────────────────────────────────────────────
@@ -178,10 +244,14 @@ export async function tasksTestCommand(): Promise<void> {
   let prompt: string;
   if (isAutoPrompt(rawPrompt)) {
     const state = await loadState();
+    // Task-level categories override global if set
+    const categories = task.promptCategories && task.promptCategories.length > 0
+      ? task.promptCategories
+      : config.global.knowledgeCategories;
     const result = pickRandomPrompt(
       config.global.promptPool,
       config.global.language,
-      config.global.knowledgeCategories,
+      categories,
       config.global.customCategories,
       state.knowledge,
     );

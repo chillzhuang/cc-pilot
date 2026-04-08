@@ -19,6 +19,7 @@ CC-PILOT is a CLI tool that **automatically schedules and triggers Claude Code c
 
 ## Features
 
+- **Arrow-Key Navigation** — Themed interactive menu with arrow-key selection, matching all 6 visual themes
 - **First-Run Auto Setup** — Guided wizard with 3 built-in preset tasks on first launch
 - **3 Task Types** — Fixed (cron), Random (time range), Window (auto-fill gaps)
 - **5h Window Tracking** — Detects rate limits, auto-defers to next window
@@ -160,7 +161,7 @@ You can accept the defaults, customize prompts, change the working directory, or
 
 ## Interactive Menu
 
-After setup, the daemon auto-starts and the borderless cyberpunk-styled interactive menu loads:
+After setup, the daemon auto-starts and the interactive menu loads with **arrow-key navigation** — all styled to match your selected theme:
 
 ```
   ██████╗ ██████╗   ██████╗ ██╗██╗      ██████╗ ████████╗
@@ -169,45 +170,31 @@ After setup, the daemon auto-starts and the borderless cyberpunk-styled interact
  ██║     ██║        ██╔═══╝ ██║██║     ██║   ██║   ██║
  ╚██████╗╚██████╗   ██║     ██║███████╗╚██████╔╝   ██║
   ╚═════╝ ╚═════╝   ╚═╝     ╚═╝╚══════╝ ╚═════╝    ╚═╝
-  C L A U D E   C O D E   A U T O   P I L O T   v1.0.0
+  C L A U D E   C O D E   A U T O   P I L O T   v1.2.0
 
   ● ONLINE    UPTIME 03:41:22    TODAY 5    TASKS 3
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ▸ TASK_CTRL ───────────────────────────────────
-  [1] LIST  ── View task registry
-  [2] ADD  ── Deploy new task
-  [3] EDIT  ── Modify task params
-  [4] REMOVE  ── Purge task
-  [5] TOGGLE  ── Enable/disable task
-  [6] TEST  ── Trigger task with live response view
+  ❯ LIST      ── View task registry
+    ADD       ── Deploy new task
+    EDIT      ── Modify task params
+    REMOVE    ── Purge task
+    TOGGLE    ── Enable/disable task
+    TEST      ── Trigger task with live streaming view
   ▸ DAEMON ───────────────────────────────────
-  [7] START  ── Launch scheduling engine
-  [8] STOP  ── Halt scheduling engine
-  [9] STATUS  ── Runtime status panel
-  ▸ DATA_STREAM ───────────────────────────────────
-  [10] LOG  ── Live execution stream
-  [11] HISTORY  ── Task execution records
-  [12] WINDOW  ── Window state monitor
-  ▸ NOTIFY ───────────────────────────────────
-  [13] DINGTALK  ── DingTalk notification settings
-  [14] FEISHU  ── Feishu notification settings
-  ▸ SYS_CONFIG ───────────────────────────────────
-  [15] INIT  ── Initialize configuration
-  [16] CONFIG  ── Edit config matrix
-  [17] INSTALL  ── Register auto-boot
-  [18] UNINSTALL  ── Remove auto-boot
-  [19] EXIT  ── Keep daemon running and exit
-  [20] SHUTDOWN  ── Stop daemon and exit
-
-  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-  [K] KNOWLEDGE  ── Knowledge learning categories
-  [L] LANG   ── EN | 中文 | РУС | DE | FR
-  [T] THEME  ── cyber | mono | neon | matrix | classic | vapor
-  [X] ABOUT  ── Author & project info
-
-  ░▒▓ INPUT ▓▒░
+    START     ── Launch scheduling engine
+    STOP      ── Halt scheduling engine
+    STATUS    ── Runtime status panel
+  ...
+  ──────────────────────────────────────────────
+    KNOWLEDGE ── Knowledge learning categories
+    LANG      ── EN | 中文 | РУС | DE | FR
+    THEME     ── cyber | mono | neon | matrix | classic | vapor
+    ABOUT     ── Author & project info
 ```
+
+Use **↑/↓ arrow keys** to navigate and **Enter** to select. The menu adapts colors and characters to your chosen theme.
 
 ---
 
@@ -397,6 +384,7 @@ tasks:
 | `tasks[].type` | `fixed`, `random`, or `window` |
 | `tasks[].cwd` | Working directory for Claude Code execution |
 | `tasks[].enabled` | Enable/disable without removing |
+| `tasks[].prompt_categories` | Task-level knowledge categories (overrides global when prompt is "auto") |
 
 ---
 

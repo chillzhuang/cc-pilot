@@ -3,10 +3,9 @@
  * Copyright (c) 2026-2099 BladeX (bladejava@qq.com)
  * Licensed under the MIT License
  */
-import { createInterface } from 'node:readline';
 import inquirer from 'inquirer';
 import { renderBanner } from './ui/banner.js';
-import { renderMenuItem, renderCategory } from './ui/render.js';
+import { renderCategory } from './ui/render.js';
 import { T, setTheme, getThemeName, getAllThemes, gradient } from './ui/theme.js';
 import { t, setLocale, getLocale } from './i18n/index.js';
 import { isDaemonRunningAsync, getDaemonUptime, getDaemonVersion, getCurrentVersion, startDaemon, restartDaemon } from './core/daemon.js';
@@ -31,9 +30,10 @@ import { aboutCommand } from './commands/about.js';
 import { dingtalkCommand, feishuCommand } from './commands/notify.js';
 import { knowledgeCommand } from './commands/knowledge.js';
 
-// ─── Readline helper ─────────────────────────────────────
+// ─── Readline helper (for press-enter prompts) ──────────
 
-function ask(promptText: string): Promise<string | null> {
+async function ask(promptText: string): Promise<string | null> {
+  const { createInterface } = await import('node:readline');
   return new Promise((resolve) => {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
     let resolved = false;
@@ -72,82 +72,88 @@ async function getStatusInfo() {
   };
 }
 
-// ─── Menu render ─────────────────────────────────────────
+// ─── Themed menu choice builder ─────────────────────────
 
-function renderMenu(): string {
-  const lines: string[] = [];
-
-  lines.push('');
-  lines.push(renderCategory(t('menu.taskCtrl')));
-  lines.push(renderMenuItem(1, t('menu.list'), t('menu.listDesc')));
-  lines.push(renderMenuItem(2, t('menu.add'), t('menu.addDesc')));
-  lines.push(renderMenuItem(3, t('menu.edit'), t('menu.editDesc')));
-  lines.push(renderMenuItem(4, t('menu.remove'), t('menu.removeDesc')));
-  lines.push(renderMenuItem(5, t('menu.toggle'), t('menu.toggleDesc')));
-  lines.push(renderMenuItem(6, t('menu.test'), t('menu.testDesc')));
-  lines.push(renderCategory(t('menu.daemon')));
-  lines.push(renderMenuItem(7, t('menu.start'), t('menu.startDesc')));
-  lines.push(renderMenuItem(8, t('menu.stop'), t('menu.stopDesc')));
-  lines.push(renderMenuItem(9, t('menu.status'), t('menu.statusDesc')));
-  lines.push(renderCategory(t('menu.dataStream')));
-  lines.push(renderMenuItem(10, t('menu.log'), t('menu.logDesc')));
-  lines.push(renderMenuItem(11, t('menu.history'), t('menu.historyDesc')));
-  lines.push(renderMenuItem(12, t('menu.window'), t('menu.windowDesc')));
-  lines.push(renderCategory(t('menu.notify')));
-  lines.push(renderMenuItem(13, t('menu.dingtalk'), t('menu.dingtalkDesc')));
-  lines.push(renderMenuItem(14, t('menu.feishu'), t('menu.feishuDesc')));
-  lines.push(renderCategory(t('menu.sysConfig')));
-  lines.push(renderMenuItem(15, t('menu.init'), t('menu.initDesc')));
-  lines.push(renderMenuItem(16, t('menu.config'), t('menu.configDesc')));
-  lines.push(renderMenuItem(17, t('menu.install'), t('menu.installDesc')));
-  lines.push(renderMenuItem(18, t('menu.uninstall'), t('menu.uninstallDesc')));
-  lines.push(renderMenuItem(19, t('menu.exit'), t('menu.exitDesc')));
-  lines.push(renderMenuItem(20, t('menu.shutdown'), t('menu.shutdownDesc')));
-  lines.push('');
-  lines.push(T.dim(`  ${T.separator.repeat(48)}`));
-  lines.push(renderMenuItem('K', t('menu.knowledge'), t('menu.knowledgeDesc')));
-  lines.push(renderMenuItem('L', t('menu.lang'), t('menu.langDesc')));
-  lines.push(renderMenuItem('T', t('menu.theme'), t('menu.themeDesc')));
-  lines.push(renderMenuItem('X', t('menu.about'), t('menu.aboutDesc')));
-  lines.push('');
-
-  return lines.join('\n');
+function menuItem(label: string, desc: string, value: string): { name: string; value: string; short: string } {
+  return {
+    name: `${T.bold(label)}  ${T.dim(`${T.separator}${T.separator} ${desc}`)}`,
+    value,
+    short: label,
+  };
 }
 
-// ─── Input handler ───────────────────────────────────────
+function buildMenuChoices() {
+  return [
+    new inquirer.Separator(renderCategory(t('menu.taskCtrl'))),
+    menuItem(t('menu.list'), t('menu.listDesc'), 'list'),
+    menuItem(t('menu.add'), t('menu.addDesc'), 'add'),
+    menuItem(t('menu.edit'), t('menu.editDesc'), 'edit'),
+    menuItem(t('menu.remove'), t('menu.removeDesc'), 'remove'),
+    menuItem(t('menu.toggle'), t('menu.toggleDesc'), 'toggle'),
+    menuItem(t('menu.test'), t('menu.testDesc'), 'test'),
+    new inquirer.Separator(renderCategory(t('menu.daemon'))),
+    menuItem(t('menu.start'), t('menu.startDesc'), 'start'),
+    menuItem(t('menu.stop'), t('menu.stopDesc'), 'stop'),
+    menuItem(t('menu.status'), t('menu.statusDesc'), 'status'),
+    new inquirer.Separator(renderCategory(t('menu.dataStream'))),
+    menuItem(t('menu.log'), t('menu.logDesc'), 'log'),
+    menuItem(t('menu.history'), t('menu.historyDesc'), 'history'),
+    menuItem(t('menu.window'), t('menu.windowDesc'), 'window'),
+    new inquirer.Separator(renderCategory(t('menu.notify'))),
+    menuItem(t('menu.dingtalk'), t('menu.dingtalkDesc'), 'dingtalk'),
+    menuItem(t('menu.feishu'), t('menu.feishuDesc'), 'feishu'),
+    new inquirer.Separator(renderCategory(t('menu.sysConfig'))),
+    menuItem(t('menu.init'), t('menu.initDesc'), 'init'),
+    menuItem(t('menu.config'), t('menu.configDesc'), 'config'),
+    menuItem(t('menu.install'), t('menu.installDesc'), 'install'),
+    menuItem(t('menu.uninstall'), t('menu.uninstallDesc'), 'uninstall'),
+    new inquirer.Separator(T.dim(`  ${T.separator.repeat(48)}`)),
+    menuItem(t('menu.knowledge'), t('menu.knowledgeDesc'), 'knowledge'),
+    menuItem(t('menu.lang'), t('menu.langDesc'), 'lang'),
+    menuItem(t('menu.theme'), t('menu.themeDesc'), 'theme'),
+    menuItem(t('menu.about'), t('menu.aboutDesc'), 'about'),
+    new inquirer.Separator(T.dim(`  ${T.separator.repeat(48)}`)),
+    menuItem(t('menu.exit'), t('menu.exitDesc'), 'exit'),
+    menuItem(t('menu.shutdown'), t('menu.shutdownDesc'), 'shutdown'),
+  ];
+}
 
-async function handleInput(input: string): Promise<boolean> {
-  const cmd = input.trim().toLowerCase();
+// ─── Action dispatcher ──────────────────────────────────
 
+async function executeAction(action: string): Promise<boolean> {
   const actions: Record<string, () => Promise<void>> = {
-    '1': tasksListCommand,
-    '2': tasksAddCommand,
-    '3': tasksEditCommand,
-    '4': tasksRemoveCommand,
-    '5': tasksToggleCommand,
-    '6': tasksTestCommand,
-    '7': startCommand,
-    '8': stopCommand,
-    '9': statusCommand,
-    '10': logCommand,
-    '11': tasksHistoryCommand,
-    '12': windowCommand,
-    '13': dingtalkCommand,
-    '14': feishuCommand,
-    '15': initCommand,
-    '16': async () => {
+    list: tasksListCommand,
+    add: tasksAddCommand,
+    edit: tasksEditCommand,
+    remove: tasksRemoveCommand,
+    toggle: tasksToggleCommand,
+    test: tasksTestCommand,
+    start: startCommand,
+    stop: stopCommand,
+    status: statusCommand,
+    log: logCommand,
+    history: tasksHistoryCommand,
+    window: windowCommand,
+    dingtalk: dingtalkCommand,
+    feishu: feishuCommand,
+    init: initCommand,
+    config: async () => {
       const { exec } = await import('node:child_process');
       const editor = process.env.EDITOR || 'vi';
       exec(`${editor} ~/.cc-pilot/config.yml`);
       console.log(T.dim(t('menu.openingConfig')));
     },
-    '17': installCommand,
-    '18': uninstallCommand,
+    install: installCommand,
+    uninstall: uninstallCommand,
+    knowledge: knowledgeCommand,
+    lang: handleLangSwitch,
+    theme: handleThemeSwitch,
+    about: aboutCommand,
   };
 
-  if (cmd === '19' || cmd === 'exit') return false;
+  if (action === 'exit') return false;
 
-  if (cmd === '20' || cmd === 'shutdown') {
+  if (action === 'shutdown') {
     if (await isDaemonRunningAsync()) {
       try {
         const { stopDaemon } = await import('./core/daemon.js');
@@ -158,41 +164,19 @@ async function handleInput(input: string): Promise<boolean> {
     return false;
   }
 
-  if (cmd === 'k' || cmd === 'knowledge') {
-    await knowledgeCommand();
-    return true;
-  }
-
-  if (cmd === 'l' || cmd === 'lang') {
-    await handleLangSwitch();
-    return true;
-  }
-
-  if (cmd === 't' || cmd === 'theme') {
-    await handleThemeSwitch();
-    return true;
-  }
-
-  if (cmd === 'x' || cmd === 'about') {
-    await aboutCommand();
-    return true;
-  }
-
-  const action = actions[cmd];
-  if (action) {
+  const handler = actions[action];
+  if (handler) {
     try {
-      await action();
+      await handler();
     } catch (err) {
       console.error(`Error: ${(err as Error).message}`);
     }
-  } else {
-    console.log(T.dim(t('menu.invalidInput')));
   }
 
   return true;
 }
 
-// ─── Language switch (inquirer list) ─────────────────────
+// ─── Language switch ─────────────────────────────────────
 
 async function handleLangSwitch(): Promise<void> {
   const { lang } = await inquirer.prompt([{
@@ -220,7 +204,7 @@ async function handleLangSwitch(): Promise<void> {
   }
 }
 
-// ─── Theme switch (inquirer list) ────────────────────────
+// ─── Theme switch ────────────────────────────────────────
 
 async function handleThemeSwitch(): Promise<void> {
   const themes = getAllThemes();
@@ -266,7 +250,6 @@ export async function interactiveMenu(): Promise<void> {
   if (configExists()) {
     const running = await isDaemonRunningAsync();
     if (running) {
-      // Version mismatch → auto-restart daemon with new code
       const daemonVer = await getDaemonVersion();
       const currentVer = getCurrentVersion();
       if (daemonVer && daemonVer !== currentVer) {
@@ -285,17 +268,23 @@ export async function interactiveMenu(): Promise<void> {
 
   let running = true;
   while (running) {
-    // Clear screen + scrollback buffer + cursor home (prevents ghost duplication)
+    // Clear screen + scrollback buffer + cursor home
     process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
     const statusInfo = await getStatusInfo();
     console.log(renderBanner(statusInfo));
-    console.log(renderMenu());
+    console.log('');
 
-    const input = await ask(`  ${gradient(`\u2591\u2592\u2593 ${t('menu.input').toUpperCase()} \u2593\u2592\u2591`)}  `);
-    if (input === null) break;
+    const { action } = await inquirer.prompt([{
+      type: 'list',
+      name: 'action',
+      message: gradient(`${T.bullet} ${t('menu.input').toUpperCase()}`),
+      choices: buildMenuChoices(),
+      pageSize: 30,
+      loop: false,
+    }]);
 
     console.log('');
-    running = await handleInput(input);
+    running = await executeAction(action);
 
     if (running) {
       await ask(`\n${T.dim(`  ${t('menu.pressEnter')}`)}`);

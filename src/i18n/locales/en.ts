@@ -130,6 +130,9 @@ const en: TranslationSchema = {
     nextTrigger: 'Next trigger',
     confirmRemove: 'Confirm purge task?',
     selectTask: 'Select task',
+    autoPromptDesc: 'Use global knowledge categories',
+    autoCategoryDesc: 'Bind specific categories to this task',
+    customPromptDesc: 'Enter a custom prompt',
   },
 
   fire: {

@@ -130,6 +130,9 @@ const de: TranslationSchema = {
     nextTrigger: 'Nächste Auslösung',
     confirmRemove: 'Aufgabe wirklich entfernen?',
     selectTask: 'Aufgabe auswählen',
+    autoPromptDesc: 'Globale Wissenskategorien verwenden',
+    autoCategoryDesc: 'Bestimmte Kategorien an diese Aufgabe binden',
+    customPromptDesc: 'Eigenen Prompt eingeben',
   },
 
   fire: {

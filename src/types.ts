@@ -15,6 +15,7 @@ export interface BaseTask {
   type: TaskType;
   cwd: string;
   enabled: boolean;
+  promptCategories?: string[];
 }
 
 export interface FixedTask extends BaseTask {

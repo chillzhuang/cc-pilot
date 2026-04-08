@@ -130,6 +130,9 @@ const ru: TranslationSchema = {
     nextTrigger: 'Следующий запуск',
     confirmRemove: 'Подтвердить удаление задачи?',
     selectTask: 'Выберите задачу',
+    autoPromptDesc: 'Использовать глобальные категории знаний',
+    autoCategoryDesc: 'Привязать конкретные категории к задаче',
+    customPromptDesc: 'Ввести пользовательский промпт',
   },
 
   fire: {

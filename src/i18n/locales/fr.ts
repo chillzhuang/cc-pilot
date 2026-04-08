@@ -130,6 +130,9 @@ const fr: TranslationSchema = {
     nextTrigger: 'Prochain declenchement',
     confirmRemove: 'Confirmer la suppression ?',
     selectTask: 'Selectionner une tache',
+    autoPromptDesc: 'Utiliser les catégories de savoir globales',
+    autoCategoryDesc: 'Lier des catégories spécifiques à cette tâche',
+    customPromptDesc: 'Entrer un prompt personnalisé',
   },
 
   fire: {

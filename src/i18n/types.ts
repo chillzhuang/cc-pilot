@@ -132,6 +132,9 @@ export interface TranslationSchema {
     nextTrigger: string;
     confirmRemove: string;
     selectTask: string;
+    autoPromptDesc: string;
+    autoCategoryDesc: string;
+    customPromptDesc: string;
   };
 
   fire: {

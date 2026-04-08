@@ -29,11 +29,13 @@ const DEFAULT_NOTIFY = {
 };
 
 function normalizeTask(raw: Record<string, unknown>): Task {
+  const promptCats = (raw.prompt_categories ?? raw.promptCategories) as string[] | undefined;
   const base = {
     name: raw.name as string,
     type: raw.type as Task['type'],
     cwd: raw.cwd as string ?? '.',
     enabled: raw.enabled !== false,
+    ...(promptCats && promptCats.length > 0 ? { promptCategories: promptCats } : {}),
   };
 
   switch (base.type) {
@@ -61,7 +63,10 @@ function normalizeTask(raw: Record<string, unknown>): Task {
 }
 
 function taskToYaml(task: Task): Record<string, unknown> {
-  const base = { name: task.name, type: task.type, cwd: task.cwd, enabled: task.enabled };
+  const base: Record<string, unknown> = { name: task.name, type: task.type, cwd: task.cwd, enabled: task.enabled };
+  if (task.promptCategories && task.promptCategories.length > 0) {
+    base.prompt_categories = task.promptCategories;
+  }
   switch (task.type) {
     case 'fixed':
       return { ...base, cron: task.cron, prompt: task.prompt };

@@ -343,8 +343,9 @@ async function promptTask(): Promise<Task> {
     const { cron } = await inquirer.prompt([{
       type: 'input',
       name: 'cron',
-      message: t('init.taskCron'),
+      message: `${t('init.taskCron')} ${T.dim('(min hour dom mon dow)')}`,
       default: '30 17 * * *',
+      suffix: T.dim('  e.g. "0 9 * * 1-5" = weekdays 9:00'),
     }]);
     const { prompt } = await inquirer.prompt([{
       type: 'input',
@@ -358,14 +359,16 @@ async function promptTask(): Promise<Task> {
     const { timeRange } = await inquirer.prompt([{
       type: 'input',
       name: 'timeRange',
-      message: t('init.taskTimeRange'),
+      message: `${t('init.taskTimeRange')} ${T.dim('(HH:MM-HH:MM)')}`,
       default: '07:00-08:00',
+      suffix: T.dim('  e.g. "09:00-10:00", "18:00-19:30"'),
     }]);
     const { days } = await inquirer.prompt([{
       type: 'input',
       name: 'days',
-      message: t('init.taskDays'),
+      message: `${t('init.taskDays')} ${T.dim('(* = daily)')}`,
       default: '*',
+      suffix: T.dim('  e.g. "*" = daily, "1-5" = Mon-Fri, "0,6" = weekends'),
     }]);
     const { prompt } = await inquirer.prompt([{
       type: 'input',
@@ -379,14 +382,16 @@ async function promptTask(): Promise<Task> {
   const { activeHours } = await inquirer.prompt([{
     type: 'input',
     name: 'activeHours',
-    message: t('init.taskActiveHours'),
+    message: `${t('init.taskActiveHours')} ${T.dim('(HH:MM-HH:MM)')}`,
     default: '08:00-23:00',
+    suffix: T.dim('  e.g. "08:00-23:00", "06:00-22:00"'),
   }]);
   const { triggerOffset } = await inquirer.prompt([{
     type: 'input',
     name: 'triggerOffset',
-    message: t('init.taskOffset'),
+    message: `${t('init.taskOffset')} ${T.dim('(N-Nm)')}`,
     default: '0-60m',
+    suffix: T.dim('  e.g. "0-60m" = 0~60min random'),
   }]);
 
   const prompts: string[] = [];

@@ -218,10 +218,14 @@ export class Scheduler {
     let resolvedPrompt: string;
     if (isAutoPrompt(prompt)) {
       const state = await loadState();
+      // Task-level categories override global if set
+      const categories = task.promptCategories && task.promptCategories.length > 0
+        ? task.promptCategories
+        : this.config.global.knowledgeCategories;
       const result = pickRandomPrompt(
         this.config.global.promptPool,
         this.config.global.language,
-        this.config.global.knowledgeCategories,
+        categories,
         this.config.global.customCategories,
         state.knowledge,
       );

@@ -130,6 +130,9 @@ const zh: TranslationSchema = {
     nextTrigger: '下次触发',
     confirmRemove: '确认清除该任务？',
     selectTask: '选择任务',
+    autoPromptDesc: '使用全局知识类别',
+    autoCategoryDesc: '为此任务绑定特定类别',
+    customPromptDesc: '输入自定义 prompt',
   },
 
   fire: {
