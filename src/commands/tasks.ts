@@ -6,12 +6,12 @@
 import inquirer from 'inquirer';
 import { loadConfig, addTask, removeTask, toggleTask } from '../core/config.js';
 import { getBuiltinCategoryIds } from '../core/knowledge.js';
-import { safePrompt } from '../ui/prompt.js';
 import { loadState, saveState, getTaskHistory } from '../core/state.js';
 import { executeTask } from '../core/executor.js';
 import { pickRandomPrompt, isAutoPrompt } from '../core/prompts.js';
 import { appendHistory, recordExecution } from '../core/state.js';
 import { renderSection, renderPanel, renderStatusLine, renderSeparator } from '../ui/render.js';
+import { selectPrompt, checkboxPrompt, safePrompt, BACK } from '../ui/prompt.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
 import { formatDuration, formatTime } from '../utils/time.js';
@@ -43,7 +43,6 @@ export async function tasksListCommand(): Promise<void> {
     return `${idx}  ${name}  ${type}  ${T.dim(schedule)}  ${status}`;
   });
 
-  // Only show next trigger for tasks that exist in config, filtering out past times
   const taskNames = new Set(config.tasks.map(tk => tk.name));
   const now = Date.now();
   const nextTask = state.tasks
@@ -65,66 +64,81 @@ export async function tasksListCommand(): Promise<void> {
 export async function tasksAddCommand(): Promise<void> {
   const config = await loadConfig();
 
-  const { name } = await inquirer.prompt([{ type: 'input', name: 'name', message: t('init.taskName') }]);
-  const { type } = await inquirer.prompt([{
-    type: 'list', name: 'type', message: t('init.taskType'),
+  const r0 = await safePrompt<{ name: string }>([{ type: 'input', name: 'name', message: t('init.taskName') }]);
+  if (!r0) return;
+
+  const type = await selectPrompt<string>({
+    message: t('init.taskType'),
     choices: [
       { name: `Fixed (${t('task.fixedDesc')})`, value: 'fixed' },
       { name: `Random (${t('task.randomDesc')})`, value: 'random' },
       { name: `Window (${t('task.windowDesc')})`, value: 'window' },
     ],
-  }]);
-  const { cwd } = await inquirer.prompt([{ type: 'input', name: 'cwd', message: t('init.taskCwd'), default: '.' }]);
+  });
+  if (type === BACK) return;
 
+  const r1 = await safePrompt<{ cwd: string }>([{ type: 'input', name: 'cwd', message: t('init.taskCwd'), default: '.' }]);
+  if (!r1) return;
+
+  const name = r0.name;
+  const cwd = r1.cwd;
   let task: Task;
+
   if (type === 'fixed') {
-    const { cron } = await inquirer.prompt([{
+    const r2 = await safePrompt<{ cron: string }>([{
       type: 'input', name: 'cron',
       message: `${t('init.taskCron')} ${T.dim('(min hour dom mon dow)')}`,
       default: '30 17 * * *',
       suffix: T.dim('  e.g. "0 9 * * 1-5" = weekdays 9:00, "*/30 * * * *" = every 30min'),
     }]);
-    const pcResult = await promptWithCategory(config);
-    if (!pcResult) return;
-    task = { name, type, cron, prompt: pcResult.prompt.text, cwd, enabled: true, ...(pcResult.prompt.categories ? { promptCategories: pcResult.prompt.categories } : {}) };
+    if (!r2) return;
+    const pc = await promptWithCategory(config);
+    if (!pc) return;
+    task = { name, type, cron: r2.cron, prompt: pc.text, cwd, enabled: true, ...(pc.categories ? { promptCategories: pc.categories } : {}) };
   } else if (type === 'random') {
-    const { timeRange } = await inquirer.prompt([{
+    const r2 = await safePrompt<{ timeRange: string }>([{
       type: 'input', name: 'timeRange',
       message: `${t('init.taskTimeRange')} ${T.dim('(HH:MM-HH:MM)')}`,
       default: '07:00-08:00',
       suffix: T.dim('  e.g. "09:00-10:00", "18:00-19:30"'),
     }]);
-    const { days } = await inquirer.prompt([{
+    if (!r2) return;
+    const r3 = await safePrompt<{ days: string }>([{
       type: 'input', name: 'days',
       message: `${t('init.taskDays')} ${T.dim('(* = daily)')}`,
       default: '*',
       suffix: T.dim('  e.g. "*" = daily, "1-5" = Mon-Fri, "0,6" = weekends'),
     }]);
-    const pcResult = await promptWithCategory(config);
-    if (!pcResult) return;
-    task = { name, type, timeRange, days, prompt: pcResult.prompt.text, cwd, enabled: true, ...(pcResult.prompt.categories ? { promptCategories: pcResult.prompt.categories } : {}) };
+    if (!r3) return;
+    const pc = await promptWithCategory(config);
+    if (!pc) return;
+    task = { name, type, timeRange: r2.timeRange, days: r3.days, prompt: pc.text, cwd, enabled: true, ...(pc.categories ? { promptCategories: pc.categories } : {}) };
   } else {
-    const { activeHours } = await inquirer.prompt([{
+    const r2 = await safePrompt<{ activeHours: string }>([{
       type: 'input', name: 'activeHours',
       message: `${t('init.taskActiveHours')} ${T.dim('(HH:MM-HH:MM)')}`,
       default: '08:00-23:00',
       suffix: T.dim('  e.g. "08:00-23:00", "06:00-22:00"'),
     }]);
-    const { triggerOffset } = await inquirer.prompt([{
+    if (!r2) return;
+    const r3 = await safePrompt<{ triggerOffset: string }>([{
       type: 'input', name: 'triggerOffset',
       message: `${t('init.taskOffset')} ${T.dim('(N-Nm)')}`,
       default: '0-60m',
       suffix: T.dim('  e.g. "0-60m" = 0~60min random, "10-30m"'),
     }]);
+    if (!r3) return;
     const prompts: string[] = [];
     let addMore = true;
     while (addMore) {
-      const { prompt } = await inquirer.prompt([{ type: 'input', name: 'prompt', message: t('init.taskPrompts') }]);
-      prompts.push(prompt);
-      const { more } = await inquirer.prompt([{ type: 'confirm', name: 'more', message: t('init.addAnother'), default: false }]);
-      addMore = more;
+      const rp = await safePrompt<{ prompt: string }>([{ type: 'input', name: 'prompt', message: t('init.taskPrompts') }]);
+      if (!rp) return;
+      prompts.push(rp.prompt);
+      const rm = await safePrompt<{ more: boolean }>([{ type: 'confirm', name: 'more', message: t('init.addAnother'), default: false }]);
+      if (!rm) return;
+      addMore = rm.more;
     }
-    task = { name, type: 'window', activeHours, triggerOffset, prompts, cwd, enabled: true };
+    task = { name, type: 'window', activeHours: r2.activeHours, triggerOffset: r3.triggerOffset, prompts, cwd, enabled: true };
   }
 
   await addTask(task);
@@ -133,29 +147,26 @@ export async function tasksAddCommand(): Promise<void> {
 
 // ─── Prompt with category binding ───────────────────────
 
-async function promptWithCategory(config: { global: { knowledgeCategories: string[]; customCategories: { id: string; name: string }[] } }): Promise<{ prompt: { text: string; categories?: string[] } } | null> {
-  const r = await safePrompt<{ promptType: string }>([{
-    type: 'list', name: 'promptType',
+async function promptWithCategory(config: { global: { knowledgeCategories: string[]; customCategories: { id: string; name: string }[] } }): Promise<{ text: string; categories?: string[] } | null> {
+  const promptType = await selectPrompt<string>({
     message: t('init.taskPrompt'),
     choices: [
       { name: `${T.accent('auto')}  ${T.dim('── ' + t('task.autoPromptDesc'))}`, value: 'auto' },
       { name: `${T.accent('auto + categories')}  ${T.dim('── ' + t('task.autoCategoryDesc'))}`, value: 'auto-category' },
       { name: `${T.accent('custom')}  ${T.dim('── ' + t('task.customPromptDesc'))}`, value: 'custom' },
     ],
-  }]);
-  if (!r) return null;
+  });
+  if (promptType === BACK) return null;
 
-  if (r.promptType === 'custom') {
-    const r2 = await safePrompt<{ text: string }>([{ type: 'input', name: 'text', message: 'Prompt:' }]);
-    if (!r2) return null;
-    return { prompt: { text: r2.text } };
+  if (promptType === 'custom') {
+    const r = await safePrompt<{ text: string }>([{ type: 'input', name: 'text', message: 'Prompt:' }]);
+    return r ? { text: r.text } : null;
   }
 
-  if (r.promptType === 'auto-category') {
+  if (promptType === 'auto-category') {
     const builtinIds = getBuiltinCategoryIds();
     const allIds = [...builtinIds, ...config.global.customCategories.map(c => c.id)];
-    const r2 = await safePrompt<{ selected: string[] }>([{
-      type: 'checkbox', name: 'selected',
+    const selected = await checkboxPrompt<string>({
       message: t('knowledge.selectCategories'),
       choices: allIds.map(id => {
         const custom = config.global.customCategories.find(c => c.id === id);
@@ -163,12 +174,12 @@ async function promptWithCategory(config: { global: { knowledgeCategories: strin
         return { name: label, value: id, checked: config.global.knowledgeCategories.includes(id) };
       }),
       validate: (input: string[]) => input.length > 0 || t('knowledge.minOneCategory'),
-    }]);
-    if (!r2) return null;
-    return { prompt: { text: 'auto', categories: r2.selected } };
+    });
+    if (selected === BACK) return null;
+    return { text: 'auto', categories: selected };
   }
 
-  return { prompt: { text: 'auto' } };
+  return { text: 'auto' };
 }
 
 // ─── Edit ────────────────────────────────────────────────
@@ -177,13 +188,13 @@ export async function tasksEditCommand(): Promise<void> {
   const config = await loadConfig();
   if (config.tasks.length === 0) { console.log(T.dim(t('task.noTasks'))); return; }
 
-  const r = await safePrompt<{ taskName: string }>([{
-    type: 'list', name: 'taskName', message: t('task.selectTask'),
+  const taskName = await selectPrompt<string>({
+    message: t('task.selectTask'),
     choices: config.tasks.map(tk => ({ name: `${tk.name} (${tk.type})`, value: tk.name })),
-  }]);
-  if (!r) return;
+  });
+  if (taskName === BACK) return;
 
-  const task = config.tasks.find(tk => tk.name === r.taskName)!;
+  const task = config.tasks.find(tk => tk.name === taskName)!;
   console.log(T.dim(`Current: ${JSON.stringify(task, null, 2)}`));
   console.log(T.dim('Edit directly:'));
   console.log(T.accent('  ~/.cc-pilot/config.yml'));
@@ -195,21 +206,19 @@ export async function tasksRemoveCommand(): Promise<void> {
   const config = await loadConfig();
   if (config.tasks.length === 0) { console.log(T.dim(t('task.noTasks'))); return; }
 
-  const r = await safePrompt<{ taskName: string }>([{
-    type: 'list', name: 'taskName', message: t('task.selectTask'),
+  const taskName = await selectPrompt<string>({
+    message: t('task.selectTask'),
     choices: config.tasks.map(tk => ({ name: `${tk.name} (${tk.type})`, value: tk.name })),
-  }]);
-  if (!r) return;
+  });
+  if (taskName === BACK) return;
 
-  const r2 = await safePrompt<{ confirm: boolean }>([{
+  const r = await safePrompt<{ confirm: boolean }>([{
     type: 'confirm', name: 'confirm', message: t('task.confirmRemove'), default: false,
   }]);
-  if (!r2) return;
+  if (!r || !r.confirm) return;
 
-  if (r2.confirm) {
-    await removeTask(r.taskName);
-    console.log(T.success(`✓ Task "${r.taskName}" removed`));
-  }
+  await removeTask(taskName);
+  console.log(T.success(`✓ Task "${taskName}" removed`));
 }
 
 // ─── Toggle ──────────────────────────────────────────────
@@ -218,17 +227,17 @@ export async function tasksToggleCommand(): Promise<void> {
   const config = await loadConfig();
   if (config.tasks.length === 0) { console.log(T.dim(t('task.noTasks'))); return; }
 
-  const r = await safePrompt<{ taskName: string }>([{
-    type: 'list', name: 'taskName', message: t('task.selectTask'),
+  const taskName = await selectPrompt<string>({
+    message: t('task.selectTask'),
     choices: config.tasks.map(tk => ({
       name: `${tk.enabled ? T.dot : T.dotEmpty} ${tk.name} (${tk.type})`,
       value: tk.name,
     })),
-  }]);
-  if (!r) return;
+  });
+  if (taskName === BACK) return;
 
-  const newState = await toggleTask(r.taskName);
-  console.log(newState ? T.success(`✓ ${r.taskName} enabled`) : T.error(`${T.dotEmpty} ${r.taskName} disabled`));
+  const newState = await toggleTask(taskName);
+  console.log(newState ? T.success(`✓ ${taskName} enabled`) : T.error(`${T.dotEmpty} ${taskName} disabled`));
 }
 
 // ─── Test (immediate trigger, full response) ─────────────
@@ -237,16 +246,15 @@ export async function tasksTestCommand(): Promise<void> {
   const config = await loadConfig();
   if (config.tasks.length === 0) { console.log(T.dim(t('task.noTasks'))); return; }
 
-  const r = await safePrompt<{ taskName: string }>([{
-    type: 'list', name: 'taskName', message: t('fire.title'),
+  const taskName = await selectPrompt<string>({
+    message: t('fire.title'),
     choices: config.tasks.map((tk, i) => ({
       name: `[${i + 1}] ${tk.name}  ${T.dim(tk.type.toUpperCase())}`,
       value: tk.name,
     })),
-  }]);
-  if (!r) return;
+  });
+  if (taskName === BACK) return;
 
-  const taskName = r.taskName;
   const task = config.tasks.find(tk => tk.name === taskName)!;
   const rawPrompt = task.type === 'window'
     ? task.prompts[Math.floor(Math.random() * task.prompts.length)]
@@ -255,7 +263,6 @@ export async function tasksTestCommand(): Promise<void> {
   let prompt: string;
   if (isAutoPrompt(rawPrompt)) {
     const state = await loadState();
-    // Task-level categories override global if set
     const categories = task.promptCategories && task.promptCategories.length > 0
       ? task.promptCategories
       : config.global.knowledgeCategories;
@@ -275,14 +282,12 @@ export async function tasksTestCommand(): Promise<void> {
     prompt = rawPrompt.trim();
   }
 
-  // Show prompt
   console.log('');
   console.log(renderPanel(`${T.primary('YOU')}  ${T.dim('TASK')} ${taskName}  ${T.dim('CWD')} ${task.cwd}  ${T.dim('TIME')} ${dayjs().format('HH:mm:ss')}`, [
     '',
     T.text(prompt),
   ]));
 
-  // Execute
   console.log('');
   const spinner = ora(t('fire.executing')).start();
   const result = await executeTask(config.global.claudePath, prompt, task.cwd, config.global.claudeModel);
@@ -296,7 +301,6 @@ export async function tasksTestCommand(): Promise<void> {
     spinner.fail(`ERROR  ${duration}s`);
   }
 
-  // Show response
   const responseLines = (result.output ?? result.error ?? '').split('\n');
   const statusText = result.success
     ? T.success(`${T.dot} SUCCESS`)
@@ -311,11 +315,9 @@ export async function tasksTestCommand(): Promise<void> {
     `  ${statusText}  ${T.dim(`${duration}s`)}  ${T.dim(`${((result.tokens ?? 0) / 1000).toFixed(1)}k tokens`)}`,
   ]));
 
-  // Save prompt + response to log
   const { logger } = await import('../utils/logger.js');
   await logger.response(taskName, prompt, result.output ?? result.error ?? '');
 
-  // Record
   await appendHistory({
     task: taskName,
     time: dayjs().toISOString(),
@@ -325,7 +327,6 @@ export async function tasksTestCommand(): Promise<void> {
   });
   if (result.success) await recordExecution(taskName, result.tokens ?? 0);
 
-  // Notify all channels
   await notifyTaskExecution(config, taskName, prompt, result);
 }
 
@@ -335,16 +336,15 @@ export async function tasksHistoryCommand(): Promise<void> {
   const config = await loadConfig();
   if (config.tasks.length === 0) { console.log(T.dim(t('task.noTasks'))); return; }
 
-  const r = await safePrompt<{ taskName: string }>([{
-    type: 'list', name: 'taskName', message: t('task.selectTask'),
+  const taskName = await selectPrompt<string>({
+    message: t('task.selectTask'),
     choices: [
       { name: 'All tasks', value: '__all__' },
       ...config.tasks.map(tk => ({ name: tk.name, value: tk.name })),
     ],
-  }]);
-  if (!r) return;
+  });
+  if (taskName === BACK) return;
 
-  const taskName = r.taskName;
   const entries = taskName === '__all__'
     ? (await import('../core/state.js')).loadHistory().then(h => h.slice(-15))
     : getTaskHistory(taskName, 15);
@@ -364,5 +364,5 @@ export async function tasksHistoryCommand(): Promise<void> {
     return `${T.dim(time)}  ${T.dim(dur.padEnd(8))}  ${status}  ${T.dim(tokens)}`;
   });
 
-  console.log(renderSection(`HISTORY ${T.dim(`── ${r.taskName === '__all__' ? 'ALL' : r.taskName}`)}`, rows));
+  console.log(renderSection(`HISTORY ${T.dim(`── ${taskName === '__all__' ? 'ALL' : taskName}`)}`, rows));
 }

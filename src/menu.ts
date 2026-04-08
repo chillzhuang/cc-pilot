@@ -5,7 +5,7 @@
  */
 import { createInterface } from 'node:readline';
 import inquirer from 'inquirer';
-import { safePrompt } from './ui/prompt.js';
+import { selectPrompt, BACK } from './ui/prompt.js';
 import { renderBanner } from './ui/banner.js';
 import { renderMenuItem, renderCategory } from './ui/render.js';
 import { T, setTheme, getThemeName, getAllThemes, gradient } from './ui/theme.js';
@@ -196,9 +196,7 @@ async function handleInput(input: string): Promise<boolean> {
 // ─── Language switch (inquirer list) ─────────────────────
 
 async function handleLangSwitch(): Promise<void> {
-  const r = await safePrompt<{ lang: string }>([{
-    type: 'list',
-    name: 'lang',
+  const lang = await selectPrompt<string>({
     message: t('menu.langSwitch'),
     choices: [
       { name: 'English', value: 'en' },
@@ -208,17 +206,17 @@ async function handleLangSwitch(): Promise<void> {
       { name: 'Français', value: 'fr' },
     ],
     default: getLocale(),
-  }]);
-  if (!r) return;
+  });
+  if (lang === BACK) return;
 
-  await setLocale(r.lang as Locale);
+  await setLocale(lang as Locale);
 
   if (configExists()) {
     const config = await loadConfig();
-    config.global.language = r.lang as Locale;
+    config.global.language = lang as Locale;
     await saveConfig(config);
   } else {
-    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: r.lang as Locale }, notify: { dingtalk: { token: '', enabled: false }, feishu: { token: '', enabled: false } }, tasks: [] });
+    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: lang as Locale }, notify: { dingtalk: { token: '', enabled: false }, feishu: { token: '', enabled: false } }, tasks: [] });
   }
 }
 
@@ -226,9 +224,7 @@ async function handleLangSwitch(): Promise<void> {
 
 async function handleThemeSwitch(): Promise<void> {
   const themes = getAllThemes();
-  const r = await safePrompt<{ selected: string }>([{
-    type: 'list',
-    name: 'selected',
+  const selected = await selectPrompt<string>({
     message: t('menu.theme'),
     choices: themes.map(th => ({
       name: `${th.name === getThemeName() ? T.success(T.dot) : ' '} ${th.name} — ${th.label}`,
@@ -236,14 +232,14 @@ async function handleThemeSwitch(): Promise<void> {
       short: th.name,
     })),
     default: getThemeName(),
-  }]);
-  if (!r) return;
+  });
+  if (selected === BACK) return;
 
-  setTheme(r.selected as ThemeName);
+  setTheme(selected as ThemeName);
 
   if (configExists()) {
     const config = await loadConfig();
-    config.global.theme = r.selected as ThemeName;
+    config.global.theme = selected as ThemeName;
     await saveConfig(config);
   }
 }

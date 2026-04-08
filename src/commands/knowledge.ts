@@ -3,11 +3,10 @@
  * Copyright (c) 2026-2099 BladeX (bladejava@qq.com)
  * Licensed under the MIT License
  */
-import inquirer from 'inquirer';
 import { loadConfig, saveConfig } from '../core/config.js';
 import { loadState, saveState } from '../core/state.js';
 import { getBuiltinCategoryIds } from '../core/knowledge.js';
-import { safePrompt } from '../ui/prompt.js';
+import { selectPrompt, checkboxPrompt, safePrompt, BACK } from '../ui/prompt.js';
 import { renderSection } from '../ui/render.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
@@ -16,19 +15,13 @@ import type { CustomCategory } from '../types.js';
 // ─── Category label helpers ─────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {
-  tech: 'catTech',
-  english: 'catEnglish',
-  medical: 'catMedical',
-  legal: 'catLegal',
-  psychology: 'catPsychology',
+  tech: 'catTech', english: 'catEnglish', medical: 'catMedical',
+  legal: 'catLegal', psychology: 'catPsychology',
 };
 
 const CATEGORY_DESCS: Record<string, string> = {
-  tech: 'catTechDesc',
-  english: 'catEnglishDesc',
-  medical: 'catMedicalDesc',
-  legal: 'catLegalDesc',
-  psychology: 'catPsychologyDesc',
+  tech: 'catTechDesc', english: 'catEnglishDesc', medical: 'catMedicalDesc',
+  legal: 'catLegalDesc', psychology: 'catPsychologyDesc',
 };
 
 function getCategoryLabel(id: string, customs: CustomCategory[]): string {
@@ -46,26 +39,19 @@ function getCategoryDesc(id: string, customs: CustomCategory[]): string {
 // ─── Main Command ───────────────────────────────────────
 
 export async function knowledgeCommand(): Promise<void> {
-  const r = await safePrompt<{ action: string }>([{
-    type: 'list',
-    name: 'action',
+  const action = await selectPrompt<string>({
     message: t('knowledge.actionSelect'),
     choices: [
       { name: t('knowledge.selectCategories'), value: 'select' },
       { name: t('knowledge.manageCustom'), value: 'custom' },
       { name: t('knowledge.resetProgress'), value: 'reset' },
-      { name: t('common.back'), value: 'back' },
     ],
-  }]);
-  if (!r || r.action === 'back') return;
+  });
+  if (action === BACK) return;
 
-  if (r.action === 'select') {
-    await selectCategories();
-  } else if (r.action === 'custom') {
-    await manageCustomCategories();
-  } else if (r.action === 'reset') {
-    await resetProgress();
-  }
+  if (action === 'select') await selectCategories();
+  else if (action === 'custom') await manageCustomCategories();
+  else if (action === 'reset') await resetProgress();
 }
 
 // ─── Select Categories ──────────────────────────────────
@@ -75,22 +61,18 @@ async function selectCategories(): Promise<void> {
   const builtinIds = getBuiltinCategoryIds();
   const allIds = [...builtinIds, ...config.global.customCategories.map(c => c.id)];
 
-  const choices = allIds.map(id => ({
-    name: `${getCategoryLabel(id, config.global.customCategories)}  ${T.dim(`── ${getCategoryDesc(id, config.global.customCategories)}`)}`,
-    value: id,
-    checked: config.global.knowledgeCategories.includes(id),
-  }));
-
-  const r = await safePrompt<{ selected: string[] }>([{
-    type: 'checkbox',
-    name: 'selected',
+  const selected = await checkboxPrompt<string>({
     message: t('knowledge.selectCategories'),
-    choices,
+    choices: allIds.map(id => ({
+      name: `${getCategoryLabel(id, config.global.customCategories)}  ${T.dim(`── ${getCategoryDesc(id, config.global.customCategories)}`)}`,
+      value: id,
+      checked: config.global.knowledgeCategories.includes(id),
+    })),
     validate: (input: string[]) => input.length > 0 || t('knowledge.minOneCategory'),
-  }]);
-  if (!r) return;
+  });
+  if (selected === BACK) return;
 
-  config.global.knowledgeCategories = r.selected;
+  config.global.knowledgeCategories = selected;
   await saveConfig(config);
   console.log(T.success(`  ✓ ${t('knowledge.categoriesSaved')}`));
 }
@@ -100,7 +82,6 @@ async function selectCategories(): Promise<void> {
 async function manageCustomCategories(): Promise<void> {
   const config = await loadConfig();
 
-  // Show current customs
   if (config.global.customCategories.length > 0) {
     const rows = config.global.customCategories.map(c =>
       `  ${T.accent(c.id)}  ${T.text(c.name)}  ${T.dim(c.description)}`,
@@ -110,25 +91,19 @@ async function manageCustomCategories(): Promise<void> {
     console.log(T.dim(`  ${t('knowledge.noCustom')}`));
   }
 
-  const r = await safePrompt<{ action: string }>([{
-    type: 'list',
-    name: 'action',
+  const action = await selectPrompt<string>({
     message: t('knowledge.actionSelect'),
     choices: [
       { name: t('knowledge.addCustom'), value: 'add' },
       ...(config.global.customCategories.length > 0
         ? [{ name: t('knowledge.removeCustom'), value: 'remove' }]
         : []),
-      { name: t('common.back'), value: 'back' },
     ],
-  }]);
-  if (!r || r.action === 'back') return;
+  });
+  if (action === BACK) return;
 
-  if (r.action === 'add') {
-    await addCustomCategory();
-  } else if (r.action === 'remove') {
-    await removeCustomCategory();
-  }
+  if (action === 'add') await addCustomCategory();
+  else if (action === 'remove') await removeCustomCategory();
 }
 
 async function addCustomCategory(): Promise<void> {
@@ -137,9 +112,7 @@ async function addCustomCategory(): Promise<void> {
   const existingIds = new Set(config.global.customCategories.map(c => c.id));
 
   const r1 = await safePrompt<{ id: string }>([{
-    type: 'input',
-    name: 'id',
-    message: t('knowledge.customId'),
+    type: 'input', name: 'id', message: t('knowledge.customId'),
     validate: (input: string) => {
       const slug = input.trim().toLowerCase();
       if (!slug || !/^[a-z0-9-]+$/.test(slug)) return 'ID must be lowercase alphanumeric with hyphens';
@@ -151,48 +124,34 @@ async function addCustomCategory(): Promise<void> {
   }]);
   if (!r1) return;
 
-  const r2 = await safePrompt<{ name: string }>([{
-    type: 'input',
-    name: 'name',
-    message: t('knowledge.customName'),
-  }]);
+  const r2 = await safePrompt<{ name: string }>([{ type: 'input', name: 'name', message: t('knowledge.customName') }]);
   if (!r2) return;
 
-  const r3 = await safePrompt<{ description: string }>([{
-    type: 'input',
-    name: 'description',
-    message: t('knowledge.customDesc'),
-  }]);
+  const r3 = await safePrompt<{ description: string }>([{ type: 'input', name: 'description', message: t('knowledge.customDesc') }]);
   if (!r3) return;
 
-  const { id } = r1;
-  const { name } = r2;
-  const { description } = r3;
-  config.global.customCategories.push({ id, name, description });
-  // Auto-enable the new category
-  if (!config.global.knowledgeCategories.includes(id)) {
-    config.global.knowledgeCategories.push(id);
+  config.global.customCategories.push({ id: r1.id, name: r2.name, description: r3.description });
+  if (!config.global.knowledgeCategories.includes(r1.id)) {
+    config.global.knowledgeCategories.push(r1.id);
   }
   await saveConfig(config);
-  console.log(T.success(`  ✓ ${t('knowledge.customAdded')}: ${name}`));
+  console.log(T.success(`  ✓ ${t('knowledge.customAdded')}: ${r2.name}`));
 }
 
 async function removeCustomCategory(): Promise<void> {
   const config = await loadConfig();
 
-  const r = await safePrompt<{ id: string }>([{
-    type: 'list',
-    name: 'id',
+  const id = await selectPrompt<string>({
     message: t('knowledge.removeCustom'),
     choices: config.global.customCategories.map(c => ({
       name: `${c.name}  ${T.dim(c.description)}`,
       value: c.id,
     })),
-  }]);
-  if (!r) return;
+  });
+  if (id === BACK) return;
 
-  config.global.customCategories = config.global.customCategories.filter(c => c.id !== r.id);
-  config.global.knowledgeCategories = config.global.knowledgeCategories.filter(k => k !== r.id);
+  config.global.customCategories = config.global.customCategories.filter(c => c.id !== id);
+  config.global.knowledgeCategories = config.global.knowledgeCategories.filter(k => k !== id);
   await saveConfig(config);
   console.log(T.success(`  ✓ ${t('knowledge.customRemoved')}`));
 }
@@ -201,10 +160,7 @@ async function removeCustomCategory(): Promise<void> {
 
 async function resetProgress(): Promise<void> {
   const r = await safePrompt<{ confirm: boolean }>([{
-    type: 'confirm',
-    name: 'confirm',
-    message: t('knowledge.resetConfirm'),
-    default: false,
+    type: 'confirm', name: 'confirm', message: t('knowledge.resetConfirm'), default: false,
   }]);
   if (!r || !r.confirm) return;
 

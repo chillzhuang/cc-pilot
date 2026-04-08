@@ -5,7 +5,7 @@
  */
 import inquirer from 'inquirer';
 import { loadConfig, saveConfig, configExists } from '../core/config.js';
-import { safePrompt } from '../ui/prompt.js';
+import { selectPrompt, safePrompt, BACK } from '../ui/prompt.js';
 import { renderSection } from '../ui/render.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
@@ -56,19 +56,15 @@ export async function dingtalkCommand(): Promise<void> {
     // Dynamic toggle label based on current state
     const toggleLabel = dk.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
-    const r = await safePrompt<{ action: string }>([{
-      type: 'list',
-      name: 'action',
+    const action = await selectPrompt<string>({
       message: t('notify.actionSelect'),
       choices: [
         { name: t('notify.setToken'), value: 'token' },
         { name: toggleLabel, value: 'toggle' },
         { name: t('notify.sendTest'), value: 'test' },
-        { name: t('common.back'), value: 'back' },
       ],
-    }]);
-    if (!r || r.action === 'back') return;
-    const action = r.action;
+    });
+    if (action === BACK) return;
 
     if (action === 'token') {
       const { token } = await inquirer.prompt([{
@@ -145,19 +141,15 @@ export async function feishuCommand(): Promise<void> {
 
     const toggleLabel = fs.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
-    const r = await safePrompt<{ action: string }>([{
-      type: 'list',
-      name: 'action',
+    const action = await selectPrompt<string>({
       message: t('notify.actionSelect'),
       choices: [
         { name: t('notify.setToken'), value: 'token' },
         { name: toggleLabel, value: 'toggle' },
         { name: t('notify.sendTest'), value: 'test' },
-        { name: t('common.back'), value: 'back' },
       ],
-    }]);
-    if (!r || r.action === 'back') return;
-    const action = r.action;
+    });
+    if (action === BACK) return;
 
     if (action === 'token') {
       const { token } = await inquirer.prompt([{
