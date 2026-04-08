@@ -5,6 +5,7 @@
  */
 import { createInterface } from 'node:readline';
 import inquirer from 'inquirer';
+import { safePrompt } from './ui/prompt.js';
 import { renderBanner } from './ui/banner.js';
 import { renderMenuItem, renderCategory } from './ui/render.js';
 import { T, setTheme, getThemeName, getAllThemes, gradient } from './ui/theme.js';
@@ -195,7 +196,7 @@ async function handleInput(input: string): Promise<boolean> {
 // ─── Language switch (inquirer list) ─────────────────────
 
 async function handleLangSwitch(): Promise<void> {
-  const { lang } = await inquirer.prompt([{
+  const r = await safePrompt<{ lang: string }>([{
     type: 'list',
     name: 'lang',
     message: t('menu.langSwitch'),
@@ -208,15 +209,16 @@ async function handleLangSwitch(): Promise<void> {
     ],
     default: getLocale(),
   }]);
+  if (!r) return;
 
-  await setLocale(lang as Locale);
+  await setLocale(r.lang as Locale);
 
   if (configExists()) {
     const config = await loadConfig();
-    config.global.language = lang as Locale;
+    config.global.language = r.lang as Locale;
     await saveConfig(config);
   } else {
-    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: lang as Locale }, notify: { dingtalk: { token: '', enabled: false }, feishu: { token: '', enabled: false } }, tasks: [] });
+    await saveConfig({ global: { ...DEFAULT_GLOBAL, language: r.lang as Locale }, notify: { dingtalk: { token: '', enabled: false }, feishu: { token: '', enabled: false } }, tasks: [] });
   }
 }
 
@@ -224,7 +226,7 @@ async function handleLangSwitch(): Promise<void> {
 
 async function handleThemeSwitch(): Promise<void> {
   const themes = getAllThemes();
-  const { selected } = await inquirer.prompt([{
+  const r = await safePrompt<{ selected: string }>([{
     type: 'list',
     name: 'selected',
     message: t('menu.theme'),
@@ -235,12 +237,13 @@ async function handleThemeSwitch(): Promise<void> {
     })),
     default: getThemeName(),
   }]);
+  if (!r) return;
 
-  setTheme(selected as ThemeName);
+  setTheme(r.selected as ThemeName);
 
   if (configExists()) {
     const config = await loadConfig();
-    config.global.theme = selected as ThemeName;
+    config.global.theme = r.selected as ThemeName;
     await saveConfig(config);
   }
 }

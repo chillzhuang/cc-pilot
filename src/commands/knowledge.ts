@@ -7,6 +7,7 @@ import inquirer from 'inquirer';
 import { loadConfig, saveConfig } from '../core/config.js';
 import { loadState, saveState } from '../core/state.js';
 import { getBuiltinCategoryIds } from '../core/knowledge.js';
+import { safePrompt } from '../ui/prompt.js';
 import { renderSection } from '../ui/render.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
@@ -45,9 +46,7 @@ function getCategoryDesc(id: string, customs: CustomCategory[]): string {
 // ─── Main Command ───────────────────────────────────────
 
 export async function knowledgeCommand(): Promise<void> {
-  const config = await loadConfig();
-
-  const { action } = await inquirer.prompt([{
+  const r = await safePrompt<{ action: string }>([{
     type: 'list',
     name: 'action',
     message: t('knowledge.actionSelect'),
@@ -58,14 +57,13 @@ export async function knowledgeCommand(): Promise<void> {
       { name: t('common.back'), value: 'back' },
     ],
   }]);
+  if (!r || r.action === 'back') return;
 
-  if (action === 'back') return;
-
-  if (action === 'select') {
+  if (r.action === 'select') {
     await selectCategories();
-  } else if (action === 'custom') {
+  } else if (r.action === 'custom') {
     await manageCustomCategories();
-  } else if (action === 'reset') {
+  } else if (r.action === 'reset') {
     await resetProgress();
   }
 }
@@ -83,15 +81,16 @@ async function selectCategories(): Promise<void> {
     checked: config.global.knowledgeCategories.includes(id),
   }));
 
-  const { selected } = await inquirer.prompt([{
+  const r = await safePrompt<{ selected: string[] }>([{
     type: 'checkbox',
     name: 'selected',
     message: t('knowledge.selectCategories'),
     choices,
     validate: (input: string[]) => input.length > 0 || t('knowledge.minOneCategory'),
   }]);
+  if (!r) return;
 
-  config.global.knowledgeCategories = selected;
+  config.global.knowledgeCategories = r.selected;
   await saveConfig(config);
   console.log(T.success(`  ✓ ${t('knowledge.categoriesSaved')}`));
 }
@@ -111,7 +110,7 @@ async function manageCustomCategories(): Promise<void> {
     console.log(T.dim(`  ${t('knowledge.noCustom')}`));
   }
 
-  const { action } = await inquirer.prompt([{
+  const r = await safePrompt<{ action: string }>([{
     type: 'list',
     name: 'action',
     message: t('knowledge.actionSelect'),
@@ -123,12 +122,11 @@ async function manageCustomCategories(): Promise<void> {
       { name: t('common.back'), value: 'back' },
     ],
   }]);
+  if (!r || r.action === 'back') return;
 
-  if (action === 'back') return;
-
-  if (action === 'add') {
+  if (r.action === 'add') {
     await addCustomCategory();
-  } else if (action === 'remove') {
+  } else if (r.action === 'remove') {
     await removeCustomCategory();
   }
 }
@@ -138,7 +136,7 @@ async function addCustomCategory(): Promise<void> {
   const builtinIds = new Set(getBuiltinCategoryIds());
   const existingIds = new Set(config.global.customCategories.map(c => c.id));
 
-  const { id } = await inquirer.prompt([{
+  const r1 = await safePrompt<{ id: string }>([{
     type: 'input',
     name: 'id',
     message: t('knowledge.customId'),
@@ -151,19 +149,25 @@ async function addCustomCategory(): Promise<void> {
     },
     filter: (input: string) => input.trim().toLowerCase(),
   }]);
+  if (!r1) return;
 
-  const { name } = await inquirer.prompt([{
+  const r2 = await safePrompt<{ name: string }>([{
     type: 'input',
     name: 'name',
     message: t('knowledge.customName'),
   }]);
+  if (!r2) return;
 
-  const { description } = await inquirer.prompt([{
+  const r3 = await safePrompt<{ description: string }>([{
     type: 'input',
     name: 'description',
     message: t('knowledge.customDesc'),
   }]);
+  if (!r3) return;
 
+  const { id } = r1;
+  const { name } = r2;
+  const { description } = r3;
   config.global.customCategories.push({ id, name, description });
   // Auto-enable the new category
   if (!config.global.knowledgeCategories.includes(id)) {
@@ -176,7 +180,7 @@ async function addCustomCategory(): Promise<void> {
 async function removeCustomCategory(): Promise<void> {
   const config = await loadConfig();
 
-  const { id } = await inquirer.prompt([{
+  const r = await safePrompt<{ id: string }>([{
     type: 'list',
     name: 'id',
     message: t('knowledge.removeCustom'),
@@ -185,9 +189,10 @@ async function removeCustomCategory(): Promise<void> {
       value: c.id,
     })),
   }]);
+  if (!r) return;
 
-  config.global.customCategories = config.global.customCategories.filter(c => c.id !== id);
-  config.global.knowledgeCategories = config.global.knowledgeCategories.filter(k => k !== id);
+  config.global.customCategories = config.global.customCategories.filter(c => c.id !== r.id);
+  config.global.knowledgeCategories = config.global.knowledgeCategories.filter(k => k !== r.id);
   await saveConfig(config);
   console.log(T.success(`  ✓ ${t('knowledge.customRemoved')}`));
 }
@@ -195,14 +200,13 @@ async function removeCustomCategory(): Promise<void> {
 // ─── Reset Progress ─────────────────────────────────────
 
 async function resetProgress(): Promise<void> {
-  const { confirm } = await inquirer.prompt([{
+  const r = await safePrompt<{ confirm: boolean }>([{
     type: 'confirm',
     name: 'confirm',
     message: t('knowledge.resetConfirm'),
     default: false,
   }]);
-
-  if (!confirm) return;
+  if (!r || !r.confirm) return;
 
   const state = await loadState();
   state.knowledge = { categories: {} };

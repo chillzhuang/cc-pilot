@@ -5,6 +5,7 @@
  */
 import inquirer from 'inquirer';
 import { loadConfig, saveConfig, configExists } from '../core/config.js';
+import { safePrompt } from '../ui/prompt.js';
 import { renderSection } from '../ui/render.js';
 import { T } from '../ui/theme.js';
 import { t } from '../i18n/index.js';
@@ -55,7 +56,7 @@ export async function dingtalkCommand(): Promise<void> {
     // Dynamic toggle label based on current state
     const toggleLabel = dk.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
-    const { action } = await inquirer.prompt([{
+    const r = await safePrompt<{ action: string }>([{
       type: 'list',
       name: 'action',
       message: t('notify.actionSelect'),
@@ -66,8 +67,8 @@ export async function dingtalkCommand(): Promise<void> {
         { name: t('common.back'), value: 'back' },
       ],
     }]);
-
-    if (action === 'back') return;
+    if (!r || r.action === 'back') return;
+    const action = r.action;
 
     if (action === 'token') {
       const { token } = await inquirer.prompt([{
@@ -144,7 +145,7 @@ export async function feishuCommand(): Promise<void> {
 
     const toggleLabel = fs.enabled ? t('notify.disableAction') : t('notify.enableAction');
 
-    const { action } = await inquirer.prompt([{
+    const r = await safePrompt<{ action: string }>([{
       type: 'list',
       name: 'action',
       message: t('notify.actionSelect'),
@@ -155,8 +156,8 @@ export async function feishuCommand(): Promise<void> {
         { name: t('common.back'), value: 'back' },
       ],
     }]);
-
-    if (action === 'back') return;
+    if (!r || r.action === 'back') return;
+    const action = r.action;
 
     if (action === 'token') {
       const { token } = await inquirer.prompt([{
