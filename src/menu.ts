@@ -57,7 +57,7 @@ async function getStatusInfo() {
   const state = await loadState();
   const history = await loadHistory();
   const today = dayjs().format('YYYY-MM-DD');
-  const todayEntries = history.filter(h => h.time.startsWith(today));
+  const todayEntries = history.filter(h => dayjs(h.time).format('YYYY-MM-DD') === today);
 
   let enabledTasks = 0;
   try {

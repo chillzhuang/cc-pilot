@@ -26,7 +26,7 @@ CC-PILOT 是一款 CLI 工具，用于**自动定时调度和触发 Claude Code 
 - **测试模式** — 即时触发任务，实时查看 Claude 的响应，面板风格交互界面
 - **主题系统** — 6 种主题：cyber（默认）、mono、neon、matrix、classic、vapor，初始化时可选
 - **无边框赛博朋克 UI** — 区块标题 + 装饰线条，无边框字符
-- **模型选择** — 可配置 Claude 模型（`claude_model` 字段，通过 `--model` 传递）
+- **模型选择** — 可选（`claude_model` 字段）。留空则跟随 Claude CLI 自身的默认模型；填值则通过 `--model` 固定到指定模型
 - **多语言支持** — English、中文、Русский、Deutsch、Français
 - **知识学习模式** — 6 大内置类别（技术、英语、医学、法律、心理、历史）+ 自定义类别，通过推送通知推送知识
 - **防重复引擎** — 洗牌迭代机制，每个类别约 150+ 个不重复问题周期，配合 AI 级近期话题提示
@@ -122,9 +122,7 @@ global:
     让我们来配置你的调度方案。
 
 ? 选择语言 / Select language: 中文
-  ✓ 检测到 Claude CLI: /usr/local/bin/claude
-? Claude CLI 路径: /usr/local/bin/claude
-? Claude 模型: claude-sonnet-4-6 (fast, recommended)
+? Claude 模型: 默认 (跟随 Claude CLI 自身设置)
 ? 主题风格: cyber (Cyberpunk)
 ```
 
@@ -341,7 +339,7 @@ CC-PILOT 支持三种调度模式，覆盖所有使用场景：
 ```yaml
 global:
   claude_path: claude
-  claude_model: claude-sonnet-4-6
+  claude_model: ""                # 留空 = 跟随 Claude CLI 自身默认
   blackout:
     - "02:00-06:00"
   log_dir: ~/.cc-pilot/logs
@@ -388,7 +386,7 @@ tasks:
 | 字段 | 说明 |
 |------|------|
 | `global.claude_path` | `claude` CLI 二进制文件路径（默认：`claude`） |
-| `global.claude_model` | Claude 模型，通过 `--model` 参数传递（默认：`claude-sonnet-4-6`） |
+| `global.claude_model` | 通过 `--model` 参数固定的 Claude 模型。留空（默认）则跟随 Claude CLI 自身设置 |
 | `global.blackout` | 禁止执行任务的时间段数组 |
 | `global.window_duration` | Claude Code 限流窗口时长（默认：`5h`） |
 | `global.language` | 界面语言：`en`、`zh`、`ru`、`de`、`fr` |
@@ -569,7 +567,7 @@ cc-pilot uninstall     # 移除服务
 **核心行为：**
 
 - **首次运行** — 自动检测缺失配置，启动配置向导并提供 3 个预设任务，完成后自动启动守护进程
-- **模型选择** — 配置中的 `claude_model` 通过 `--model` 参数传递给 Claude CLI
+- **模型选择** — 配置中的 `claude_model` 通过 `--model` 参数传递给 Claude CLI；留空则不传该参数，由 Claude 使用其自身默认
 - **定时任务**：精确在 cron 时间触发（黑名单时段跳过）
 - **随机任务**：每天午夜预计算当天的随机触发时间
 - **窗口任务**：监听窗口状态变化，在 `trigger_offset` 范围内触发

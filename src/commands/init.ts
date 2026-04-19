@@ -4,37 +4,12 @@
  * Licensed under the MIT License
  */
 import inquirer from 'inquirer';
-import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { saveConfig, configExists } from '../core/config.js';
 import { t, setLocale } from '../i18n/index.js';
 import { ensureDirs } from '../utils/paths.js';
 import { T, setTheme, getAllThemes } from '../ui/theme.js';
 import { renderSection, renderPanel } from '../ui/render.js';
 import type { Config, Task, Locale, UISize, ThemeName } from '../types.js';
-
-function detectClaudePath(): { path: string; found: boolean } {
-  // Try common paths
-  const candidates = ['claude'];
-  try {
-    const which = execSync('which claude 2>/dev/null || where claude 2>nul', { encoding: 'utf-8' }).trim();
-    if (which) return { path: which.split('\n')[0].trim(), found: true };
-  } catch { /* not in PATH */ }
-
-  // Check common install locations
-  const commonPaths = [
-    '/usr/local/bin/claude',
-    '/opt/homebrew/bin/claude',
-    `${process.env.HOME}/.npm-global/bin/claude`,
-    `${process.env.HOME}/.local/bin/claude`,
-    `${process.env.HOME}/.claude/local/claude`,
-  ];
-  for (const p of commonPaths) {
-    if (existsSync(p)) return { path: p, found: true };
-  }
-
-  return { path: 'claude', found: false };
-}
 
 // ─── Default preset tasks ────────────────────────────────
 
@@ -99,33 +74,40 @@ export async function firstRunSetup(): Promise<void> {
 
   await setLocale(language as Locale);
 
-  // Claude path — auto-detect
-  const detected = detectClaudePath();
-  if (detected.found) {
-    console.log(T.success(`  ✓ Claude CLI detected: ${detected.path}`));
-  } else {
-    console.log(T.accent('  ⚠ Claude CLI not found in PATH'));
-  }
-
-  const { claudePath } = await inquirer.prompt([{
-    type: 'input',
-    name: 'claudePath',
-    message: t('init.claudePath'),
-    default: detected.path,
-  }]);
+  // Claude path — hardcoded to `claude`, rely on PATH resolution
+  const claudePath = 'claude';
 
   // Claude model
-  const { claudeModel } = await inquirer.prompt([{
+  const CUSTOM_MODEL_SENTINEL = '__custom__';
+  const { claudeModel: modelChoice } = await inquirer.prompt([{
     type: 'list',
     name: 'claudeModel',
     message: language === 'zh' ? 'Claude 模型:' : 'Claude model:',
     choices: [
+      {
+        name: language === 'zh' ? '默认 (跟随 Claude CLI 自身设置)' : 'Default (follow Claude CLI\'s own setting)',
+        value: '',
+      },
       { name: 'claude-sonnet-4-6 (fast, recommended)', value: 'claude-sonnet-4-6' },
       { name: 'claude-opus-4-6 (powerful)', value: 'claude-opus-4-6' },
       { name: 'claude-haiku-4-5 (lightweight)', value: 'claude-haiku-4-5' },
+      {
+        name: language === 'zh' ? '自定义输入…' : 'Custom (enter model name)…',
+        value: CUSTOM_MODEL_SENTINEL,
+      },
     ],
-    default: 'claude-sonnet-4-6',
+    default: '',
   }]);
+
+  let claudeModel: string = modelChoice;
+  if (modelChoice === CUSTOM_MODEL_SENTINEL) {
+    const { customModel } = await inquirer.prompt([{
+      type: 'input',
+      name: 'customModel',
+      message: language === 'zh' ? '输入模型名称 (留空则跟随 Claude CLI 默认):' : 'Enter model name (empty = follow Claude CLI default):',
+    }]);
+    claudeModel = (customModel as string).trim();
+  }
 
   // UI Size
   // Theme

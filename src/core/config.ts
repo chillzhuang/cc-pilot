@@ -11,7 +11,7 @@ import type { Config, Task, Locale, UISize, ThemeName, GlobalConfig, CustomCateg
 
 const DEFAULT_GLOBAL: GlobalConfig = {
   claudePath: 'claude',
-  claudeModel: 'claude-sonnet-4-6',
+  claudeModel: '',
   blackout: ['02:00-06:00'],
   logDir: '~/.cc-pilot/logs',
   windowDuration: '5h',

@@ -46,7 +46,7 @@ export async function statusCommand(): Promise<void> {
   // Today stats
   const history = await loadHistory();
   const today = dayjs().format('YYYY-MM-DD');
-  const todayEntries = history.filter(h => h.time.startsWith(today));
+  const todayEntries = history.filter(h => dayjs(h.time).format('YYYY-MM-DD') === today);
   const totalToday = todayEntries.length;
   const successToday = todayEntries.filter(h => h.status === 'success').length;
   const rateLimitToday = todayEntries.filter(h => h.status === 'rate_limited').length;

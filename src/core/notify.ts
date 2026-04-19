@@ -23,7 +23,7 @@ export async function notifyTaskExecution(
     taskName,
     prompt,
     time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-    model: config.global.claudeModel,
+    model: config.global.claudeModel || 'default',
     response: result.output ?? result.error ?? '',
     duration: result.duration,
     tokens: result.tokens ?? 0,
