@@ -347,7 +347,7 @@ export async function tasksTestCommand(): Promise<void> {
     tokens: result.tokens ?? 0,
   });
 
-  await notifyTaskExecution(config, taskName, prompt, result);
+  await notifyTaskExecution(taskName, prompt, result);
 }
 
 // ─── History ─────────────────────────────────────────────

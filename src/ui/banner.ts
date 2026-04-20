@@ -15,7 +15,7 @@ const ASCII_ART = [
   '  ╚═════╝ ╚═════╝   ╚═╝     ╚═╝╚══════╝ ╚═════╝    ╚═╝',
 ];
 
-const SUBTITLE = '  C L A U D E   C O D E   A U T O   P I L O T   v1.2.5';
+const SUBTITLE = '  C L A U D E   C O D E   A U T O   P I L O T   v1.2.6';
 
 interface BannerStatus {
   online: boolean;

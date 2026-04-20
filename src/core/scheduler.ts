@@ -611,8 +611,10 @@ export class Scheduler {
       await logger.error(`FAIL  ${task.name} — ${result.error}${retrySuffix}`);
     }
 
-    // Notify all channels on every execution (success, error, rate_limited)
-    await notifyTaskExecution(this.config, task.name, resolvedPrompt, result);
+    // Notify all channels on every execution (success, error, rate_limited).
+    // notifyTaskExecution reloads config internally, so notify settings changed
+    // via CLI after daemon startup still take effect without a daemon restart.
+    await notifyTaskExecution(task.name, resolvedPrompt, result);
   }
 
   private async rescheduleRandomTasks(): Promise<void> {

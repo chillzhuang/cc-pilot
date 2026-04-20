@@ -4,21 +4,26 @@
  * Licensed under the MIT License
  */
 import dayjs from 'dayjs';
+import { loadConfig } from './config.js';
 import { sendTaskNotification as sendDingtalkNotify } from '../utils/dingtalk.js';
 import { sendTaskNotification as sendFeishuNotify } from '../utils/feishu.js';
 import { logger } from '../utils/logger.js';
-import type { Config, ExecutionResult } from '../types.js';
+import type { ExecutionResult } from '../types.js';
 
 /**
  * Send notifications to all configured channels after any task execution.
  * Called from both scheduler (auto) and tasksTestCommand (manual [6]).
+ *
+ * Config is reloaded from disk on every call so that notify settings changed
+ * via the CLI menu take effect immediately — the long-lived daemon otherwise
+ * holds a stale in-memory snapshot from startup.
  */
 export async function notifyTaskExecution(
-  config: Config,
   taskName: string,
   prompt: string,
   result: ExecutionResult,
 ): Promise<void> {
+  const config = await loadConfig();
   const payload = {
     taskName,
     prompt,
