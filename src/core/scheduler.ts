@@ -169,10 +169,11 @@ export class Scheduler {
   }
 
   private scheduleRandomNext(task: RandomTask): Date {
-    // Enhanced mode: poll already runs continuously, just return the next
-    // expected window-start for state.nextRun display.
+    // Enhanced mode: pre-pick the next planned T (so display shows exact time).
     if (this.config.global.enhancedMode) {
-      return this.computeNextWindowStart(task, true);
+      const nextT = this.pickPlannedFireTime(task, true);
+      this.taskFireTimes.set(task.name, nextT);
+      return nextT;
     }
 
     // Legacy mode: schedule a fresh one-shot timer for next matching day.
@@ -225,6 +226,14 @@ export class Scheduler {
     });
     if (openJob) this.jobs.set(stateKey, openJob);
 
+    // Pre-pick the planned random fire time T within the next applicable
+    // window, so the CLI shows an exact preset time instead of just windowStart.
+    // This T is honored by the planned path of startWindowPolling — only when
+    // the cron fires significantly late (Mac slept through windowStart) does
+    // the catch-up path override it with "fire ASAP".
+    const plannedT = this.pickPlannedFireTime(task, todayRuns > 0);
+    this.taskFireTimes.set(task.name, plannedT);
+
     // If we install while already inside today's window AND haven't run yet,
     // start polling right now instead of waiting for tomorrow's cron.
     const now = new Date();
@@ -232,42 +241,81 @@ export class Scheduler {
       this.startWindowPolling(task);
     }
 
-    return this.computeNextWindowStart(task, todayRuns > 0);
+    return plannedT;
   }
 
   private startWindowPolling(task: RandomTask): void {
     this.clearEnhancedPoll(task.name);
 
-    // Decide the "fire after this time" based on whether this is a planned
-    // trigger (Mac was awake at windowStart) or a catch-up trigger (cron
-    // fired late after sleep / daemon started mid-window).
+    // Decide the "fire after this time":
+    //  - PLANNED (cron fired close to windowStart = Mac was awake): honor the
+    //    pre-picked T from install/last-fire so the displayed nextRun matches
+    //    the actual fire time.
+    //  - WAKE (cron fired noticeably late = catch-up after sleep, or daemon
+    //    just started mid-window): the pre-picked T is no longer meaningful;
+    //    fire ASAP (1-5s jitter applied by the tick).
     const now = new Date();
-    const { start, end } = parseTimeRange(task.timeRange);
+    const { start } = parseTimeRange(task.timeRange);
     const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
-    const windowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
     const lateMs = now.getTime() - windowStart.getTime();
 
     let fireAfter: Date;
     if (lateMs < PLANNED_TRIGGER_THRESHOLD_MS) {
-      // Planned mode: Mac is awake (cron fired on time). Pick a random fire
-      // time within remaining window — emulates legacy "fire at preset random
-      // time" behavior so always-on machines don't always fire at 07:00:0X.
-      const remainingMs = Math.max(0, windowEnd.getTime() - now.getTime());
-      fireAfter = new Date(now.getTime() + Math.floor(Math.random() * remainingMs));
+      // Planned mode: use the pre-picked T (set at install / persistNextRun).
+      // Fall back to a fresh pick if for some reason it's missing or stale.
+      const planned = this.taskFireTimes.get(task.name);
+      const todayWindowEnd = this.todayWindowEnd(task);
+      if (planned && planned.getTime() <= todayWindowEnd.getTime() && planned.getTime() >= windowStart.getTime()) {
+        fireAfter = planned;
+      } else {
+        fireAfter = this.pickPlannedFireTime(task, false);
+        this.taskFireTimes.set(task.name, fireAfter);
+        // Also persist so display matches
+        this.persistNextRun(task.name, fireAfter);
+      }
       void logger.info(`PLAN  ${task.name} — Mac awake at windowStart, fire scheduled ~${dayjs(fireAfter).format('HH:mm:ss')}`);
     } else {
-      // Catch-up mode: cron fired late (Mac just woke from sleep, or daemon
-      // started mid-window). Fire ASAP — the actual jitter is added in the tick.
+      // Catch-up mode: cron fired late, the planned T is in the past.
       fireAfter = now;
+      this.taskFireTimes.set(task.name, fireAfter);
+      // Update display so CLI doesn't keep showing the stale planned T
+      // during the brief window before the actual fire updates it again.
+      this.persistNextRun(task.name, fireAfter);
       void logger.info(`WAKE  ${task.name} — Mac woke / daemon started mid-window at ${dayjs(now).format('HH:mm:ss')}, firing ASAP`);
     }
-    this.taskFireTimes.set(task.name, fireAfter);
 
     const interval = setInterval(() => { void this.enhancedPollTick(task); }, ENHANCED_POLL_INTERVAL_MS);
     this.enhancedPolls.set(task.name, interval);
     // Try once immediately. If we're in catch-up mode we'll fire right away;
     // if planned, the tick will see now < fireAfter and just wait.
     void this.enhancedPollTick(task);
+  }
+
+  /** Pick a random fire time within the next applicable window for display + planning. */
+  private pickPlannedFireTime(task: RandomTask, alreadyRanToday: boolean): Date {
+    const now = new Date();
+    const { start, end } = parseTimeRange(task.timeRange);
+
+    if (!alreadyRanToday && isDayMatch(now, task.days)) {
+      const ws = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
+      const we = new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
+      if (we.getTime() > now.getTime()) {
+        const effectiveStart = Math.max(ws.getTime(), now.getTime());
+        const remaining = we.getTime() - effectiveStart;
+        return new Date(effectiveStart + Math.floor(Math.random() * remaining));
+      }
+    }
+
+    const nextDay = nextDayMatch(task.days);
+    const ws = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), start.h, start.m);
+    const rangeMs = ((end.h * 60 + end.m) - (start.h * 60 + start.m)) * 60_000;
+    return new Date(ws.getTime() + Math.floor(Math.random() * rangeMs));
+  }
+
+  private todayWindowEnd(task: RandomTask): Date {
+    const now = new Date();
+    const { end } = parseTimeRange(task.timeRange);
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
   }
 
   private async enhancedPollTick(task: RandomTask): Promise<void> {
@@ -285,15 +333,18 @@ export class Scheduler {
     // shut down until tomorrow.
     if (!isDayMatch(now, task.days) || !isInTimeRange(now, task.timeRange)) {
       this.clearEnhancedPoll(task.name);
-      this.taskFireTimes.delete(task.name);
       // If we never ran today (window passed without firing — e.g. slept the
-      // whole window), advance state.nextRun so the CLI doesn't keep showing
-      // a stale past time.
+      // whole window), pre-pick tomorrow's T so the CLI shows an exact preset
+      // time instead of a stale past one.
       void (async () => {
         const state = await loadState();
         if ((state.tasks[task.name]?.todayRuns ?? 0) === 0) {
-          this.persistNextRun(task.name, this.computeNextWindowStart(task, true));
-          await logger.info(`SKIP  ${task.name} — window ${task.timeRange} passed without wake-up, deferred to next day`);
+          const nextT = this.pickPlannedFireTime(task, true);
+          this.taskFireTimes.set(task.name, nextT);
+          this.persistNextRun(task.name, nextT);
+          await logger.info(`SKIP  ${task.name} — window ${task.timeRange} passed without wake-up, deferred to ${dayjs(nextT).format('MM-DD HH:mm:ss')}`);
+        } else {
+          this.taskFireTimes.delete(task.name);
         }
       })();
       return;
@@ -327,10 +378,13 @@ export class Scheduler {
       if ((stateAfterJitter.tasks[task.name]?.todayRuns ?? 0) > 0) return;
 
       await this.execute(task);
-      this.persistNextRun(task.name, this.computeNextWindowStart(task, true));
+      // Pre-pick tomorrow's T and use it as the new nextRun (so display
+      // immediately shows an exact preset time for the next run).
+      const nextT = this.pickPlannedFireTime(task, true);
+      this.taskFireTimes.set(task.name, nextT);
+      this.persistNextRun(task.name, nextT);
       // Successful fire: stop polling until next windowStart cron reopens it.
       this.clearEnhancedPoll(task.name);
-      this.taskFireTimes.delete(task.name);
     } finally {
       this.firingTasks.delete(task.name);
     }
