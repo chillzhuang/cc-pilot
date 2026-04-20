@@ -54,6 +54,15 @@ export interface GlobalConfig {
   promptPool: string[];
   knowledgeCategories: string[];
   customCategories: CustomCategory[];
+  /**
+   * Enhanced mode: schedule random tasks near window start (with small jitter)
+   * instead of a uniform random pick across the full window. Combined with the
+   * always-on late-fire skip, this maximizes the chance that a macOS DarkWake
+   * during the window catches the timer before the window closes.
+   *
+   * Default: true. Set to false to restore the legacy uniform-random behavior.
+   */
+  enhancedMode: boolean;
 }
 
 export interface DingtalkConfig {
@@ -134,6 +143,7 @@ export interface ExecutionResult {
   output?: string;
   error?: string;
   rateLimited?: boolean;
+  authFailed?: boolean;
   retryAfter?: string;
   duration: number;
   tokens?: number;

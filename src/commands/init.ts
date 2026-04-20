@@ -122,6 +122,40 @@ export async function firstRunSetup(): Promise<void> {
 
   setTheme(theme as ThemeName);
 
+  // Enhanced mode — wake-friendly scheduling
+  console.log('');
+  console.log(renderPanel(
+    language === 'zh' ? '增强模式 (Enhanced Mode)' : 'Enhanced Mode',
+    language === 'zh' ? [
+      T.dim('  当电脑在任务窗口期间睡眠时，macOS 的 setTimeout 计时器会被冻结，'),
+      T.dim('  导致随机时间点错过、唤醒时已超出窗口而被严格策略 SKIP。'),
+      '',
+      T.primary('  开启后：') + T.dim('调度时间贴近窗口起点 + 1~59 秒抖动，'),
+      T.dim('          这样窗口期内任意一次 DarkWake 都能触发任务。'),
+      T.primary('  关闭后：') + T.dim('在整个窗口内均匀随机挑一个时间（更自然但易错过）。'),
+      '',
+      T.dim('  无论开关都会严格遵守时间窗口：错过即跳过，不顺延。'),
+    ] : [
+      T.dim('  When the Mac sleeps during a task window, setTimeout timers are'),
+      T.dim('  frozen by macOS. The scheduled random instant gets missed and the'),
+      T.dim('  late catch-up fire is then SKIPped by the strict window guard.'),
+      '',
+      T.primary('  ON : ') + T.dim('schedule near windowStart + 1~59s jitter so any DarkWake'),
+      T.dim('       inside the window can fire the timer.'),
+      T.primary('  OFF: ') + T.dim('uniform random pick across the full window (legacy).'),
+      '',
+      T.dim('  Either way, the strict window guard skips late fires (no postpone).'),
+    ],
+  ));
+  console.log('');
+
+  const { enhancedMode } = await inquirer.prompt([{
+    type: 'confirm',
+    name: 'enhancedMode',
+    message: language === 'zh' ? '开启增强模式?' : 'Enable enhanced mode?',
+    default: true,
+  }]);
+
   // Knowledge categories
   const { categories } = await inquirer.prompt([{
     type: 'checkbox',
@@ -254,6 +288,7 @@ export async function firstRunSetup(): Promise<void> {
       promptPool: [],
       knowledgeCategories: categories as string[],
       customCategories: [],
+      enhancedMode: enhancedMode as boolean,
     },
     notify: {
       dingtalk: { token: '', enabled: false },

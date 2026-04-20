@@ -21,6 +21,7 @@ const DEFAULT_GLOBAL: GlobalConfig = {
   promptPool: [],
   knowledgeCategories: ['tech'],
   customCategories: [],
+  enhancedMode: true,
 };
 
 const DEFAULT_NOTIFY = {
@@ -104,6 +105,7 @@ export async function loadConfig(): Promise<Config> {
         name: c.name as string,
         description: (c.description ?? '') as string,
       })),
+      enhancedMode: (globalRaw.enhanced_mode ?? globalRaw.enhancedMode ?? DEFAULT_GLOBAL.enhancedMode) as boolean,
     },
     notify: {
       dingtalk: {
@@ -136,6 +138,7 @@ export async function saveConfig(config: Config): Promise<void> {
       custom_categories: config.global.customCategories.length > 0
         ? config.global.customCategories.map(c => ({ id: c.id, name: c.name, description: c.description }))
         : undefined,
+      enhanced_mode: config.global.enhancedMode,
     },
     notify: {
       dingtalk: {
