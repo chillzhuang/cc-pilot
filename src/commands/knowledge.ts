@@ -15,11 +15,13 @@ import type { CustomCategory } from '../types.js';
 // ─── Category label helpers ─────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {
+  rapid: 'catRapid',
   tech: 'catTech', english: 'catEnglish', medical: 'catMedical',
   legal: 'catLegal', psychology: 'catPsychology', history: 'catHistory',
 };
 
 const CATEGORY_DESCS: Record<string, string> = {
+  rapid: 'catRapidDesc',
   tech: 'catTechDesc', english: 'catEnglishDesc', medical: 'catMedicalDesc',
   legal: 'catLegalDesc', psychology: 'catPsychologyDesc', history: 'catHistoryDesc',
 };

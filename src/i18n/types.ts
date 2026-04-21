@@ -224,6 +224,8 @@ export interface TranslationSchema {
   };
 
   knowledge: {
+    catRapid: string;
+    catRapidDesc: string;
     catTech: string;
     catTechDesc: string;
     catEnglish: string;

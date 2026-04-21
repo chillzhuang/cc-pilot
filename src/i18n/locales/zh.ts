@@ -222,6 +222,8 @@ const zh: TranslationSchema = {
   },
 
   knowledge: {
+    catRapid: '极速',
+    catRapidDesc: '默认：200 条短语直接一句话调用，不扩展',
     catTech: '技术',
     catTechDesc: '编程、技术、DevOps',
     catEnglish: '英语',

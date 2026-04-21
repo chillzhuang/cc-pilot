@@ -222,6 +222,8 @@ const fr: TranslationSchema = {
   },
 
   knowledge: {
+    catRapid: 'Rapide',
+    catRapidDesc: 'Défaut : 200 phrases courtes directes, sans extension',
     catTech: 'Tech',
     catTechDesc: 'Programmation, technologie, DevOps',
     catEnglish: 'Anglais',

@@ -1,6 +1,6 @@
 {
   "name": "@springblade/cc-pilot",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Claude Code Auto Pilot — Cyberpunk-styled intelligent conversation scheduler",
   "type": "module",
   "bin": {

@@ -156,21 +156,9 @@ export async function firstRunSetup(): Promise<void> {
     default: true,
   }]);
 
-  // Knowledge categories
-  const { categories } = await inquirer.prompt([{
-    type: 'checkbox',
-    name: 'categories',
-    message: language === 'zh' ? '选择知识学习类别:' : 'Select knowledge categories:',
-    choices: [
-      { name: language === 'zh' ? '技术 — 编程、技术、DevOps' : 'Tech — programming, technology, DevOps', value: 'tech', checked: true },
-      { name: language === 'zh' ? '英语 — 词汇、语法、习语' : 'English — vocabulary, grammar, idioms', value: 'english' },
-      { name: language === 'zh' ? '医学 — 健康、营养、急救' : 'Medical — health, nutrition, first aid', value: 'medical' },
-      { name: language === 'zh' ? '法律 — 合同、权益、法规' : 'Legal — contracts, rights, regulations', value: 'legal' },
-      { name: language === 'zh' ? '心理 — 认知偏误、习惯、决策' : 'Psychology — cognitive biases, habits, decisions', value: 'psychology' },
-      { name: language === 'zh' ? '历史 — 文明、战争、革命、重大事件' : 'History — civilizations, wars, revolutions, key events', value: 'history' },
-    ],
-    validate: (input: string[]) => input.length > 0 || (language === 'zh' ? '至少选择一个类别' : 'Select at least 1 category'),
-  }]);
+  // Knowledge categories — default to "rapid" (200 one-shot short phrases).
+  // Users can change this later via the K menu.
+  const categories: string[] = ['rapid'];
 
   // Show default tasks and ask if user wants them
   console.log('');

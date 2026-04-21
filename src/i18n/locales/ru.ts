@@ -222,6 +222,8 @@ const ru: TranslationSchema = {
   },
 
   knowledge: {
+    catRapid: 'Быстрый',
+    catRapidDesc: 'По умолчанию: 200 коротких фраз, без расширений',
     catTech: 'Технологии',
     catTechDesc: 'Программирование, технологии, DevOps',
     catEnglish: 'Английский',

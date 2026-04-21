@@ -222,6 +222,8 @@ const de: TranslationSchema = {
   },
 
   knowledge: {
+    catRapid: 'Turbo',
+    catRapidDesc: 'Standard: 200 kurze Einzeil-Phrasen, ohne Ausbau',
     catTech: 'Technik',
     catTechDesc: 'Programmierung, Technologie, DevOps',
     catEnglish: 'Englisch',

@@ -19,7 +19,7 @@ const DEFAULT_GLOBAL: GlobalConfig = {
   uiSize: 'medium',
   theme: 'cyber',
   promptPool: [],
-  knowledgeCategories: ['tech'],
+  knowledgeCategories: ['rapid'],
   customCategories: [],
   enhancedMode: true,
 };
