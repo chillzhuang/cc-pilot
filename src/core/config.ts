@@ -42,14 +42,19 @@ function normalizeTask(raw: Record<string, unknown>): Task {
   switch (base.type) {
     case 'fixed':
       return { ...base, type: 'fixed', cron: raw.cron as string, prompt: raw.prompt as string };
-    case 'random':
+    case 'random': {
+      const tight = (raw.tight_fire_window ?? raw.tightFireWindow) as string | undefined;
+      const anchor = raw.anchor as string | undefined;
       return {
         ...base,
         type: 'random',
         timeRange: (raw.time_range ?? raw.timeRange) as string,
         days: (raw.days as string) ?? '*',
         prompt: raw.prompt as string,
+        ...(tight ? { tightFireWindow: tight } : {}),
+        ...(anchor ? { anchor } : {}),
       };
+    }
     case 'window':
       return {
         ...base,
@@ -71,8 +76,12 @@ function taskToYaml(task: Task): Record<string, unknown> {
   switch (task.type) {
     case 'fixed':
       return { ...base, cron: task.cron, prompt: task.prompt };
-    case 'random':
-      return { ...base, time_range: task.timeRange, days: task.days, prompt: task.prompt };
+    case 'random': {
+      const out: Record<string, unknown> = { ...base, time_range: task.timeRange, days: task.days, prompt: task.prompt };
+      if (task.tightFireWindow) out.tight_fire_window = task.tightFireWindow;
+      if (task.anchor) out.anchor = task.anchor;
+      return out;
+    }
     case 'window':
       return { ...base, active_hours: task.activeHours, trigger_offset: task.triggerOffset, prompts: task.prompts };
   }

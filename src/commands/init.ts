@@ -13,6 +13,13 @@ import type { Config, Task, Locale, UISize, ThemeName } from '../types.js';
 
 // ─── Default preset tasks ────────────────────────────────
 
+// The three default tasks are chained so each fires just after the previous
+// Claude rate-limit window (5h) expires:
+//   morning fires in the first 5min of 07:00-08:00 (deterministic early start)
+//   noon = morning.lastRun + 5h + 0~5min jitter (clamped to 12:00-13:00)
+//   evening = noon.lastRun + 5h + 0~5min jitter (clamped to 17:00-18:00)
+// `timeRange` remains the wake-eligible window — Mac waking anywhere inside
+// it still triggers an immediate catch-up via enhanced mode polling.
 const DEFAULT_TASKS: Task[] = [
   {
     name: 'morning-activate',
@@ -22,6 +29,7 @@ const DEFAULT_TASKS: Task[] = [
     prompt: '',   // empty = pick random from built-in 100 prompts
     cwd: '.',
     enabled: true,
+    tightFireWindow: '07:00-07:05',
   },
   {
     name: 'noon-activate',
@@ -31,6 +39,7 @@ const DEFAULT_TASKS: Task[] = [
     prompt: '',
     cwd: '.',
     enabled: true,
+    anchor: 'morning-activate',
   },
   {
     name: 'evening-activate',
@@ -40,6 +49,7 @@ const DEFAULT_TASKS: Task[] = [
     prompt: '',
     cwd: '.',
     enabled: true,
+    anchor: 'noon-activate',
   },
 ];
 
@@ -164,14 +174,14 @@ export async function firstRunSetup(): Promise<void> {
   console.log('');
   console.log(renderSection(`▸ ${t('init.defaultTasks')}`, [
     '',
-    `  ${T.success('●')} ${T.accent('morning-activate')}   ── 07:00-08:00 ${T.dim('random daily')}`,
-    T.dim('    prompt: (random from 100 built-in light prompts)'),
+    `  ${T.success('●')} ${T.accent('morning-activate')}   ── 07:00-07:05 ${T.dim('plan, wake-catch 07:00-08:00')}`,
+    T.dim('    prompt: (random from built-in light prompts)'),
     '',
-    `  ${T.success('●')} ${T.accent('noon-activate')}      ── 12:00-13:00 ${T.dim('random daily')}`,
-    T.dim('    prompt: (random from 100 built-in light prompts)'),
+    `  ${T.success('●')} ${T.accent('noon-activate')}      ── ${T.dim('morning + 5h + 0~5min, within 12:00-13:00')}`,
+    T.dim('    prompt: (random from built-in light prompts)'),
     '',
-    `  ${T.success('●')} ${T.accent('evening-activate')}   ── 17:00-18:00 ${T.dim('random daily')}`,
-    T.dim('    prompt: (random from 100 built-in light prompts)'),
+    `  ${T.success('●')} ${T.accent('evening-activate')}   ── ${T.dim('noon + 5h + 0~5min, within 17:00-18:00')}`,
+    T.dim('    prompt: (random from built-in light prompts)'),
     '',
   ]));
   console.log('');

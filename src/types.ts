@@ -29,6 +29,21 @@ export interface RandomTask extends BaseTask {
   timeRange: string;
   days: string;
   prompt: string;
+  /**
+   * Optional sub-range within `timeRange` used as the planned fire window.
+   * Wake-induced catch-up still uses the full `timeRange`, so the Mac waking
+   * at 07:30 with timeRange='07:00-08:00' + tightFireWindow='07:00-07:05' will
+   * still fire ASAP — this only constrains the deterministic pre-pick.
+   */
+  tightFireWindow?: string;
+  /**
+   * Optional name of another random task to chain off. The planned fire time is
+   * computed as `<anchor>.lastRun + global.windowDuration + random(0..5min)`,
+   * clamped to today's `timeRange`. If the anchor hasn't fired today, falls
+   * back to the standard random pick. Used so each daily activation lands just
+   * after the previous Claude rate-limit window expires.
+   */
+  anchor?: string;
 }
 
 export interface WindowTask extends BaseTask {

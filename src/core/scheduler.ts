@@ -18,10 +18,11 @@ import {
   parseOffset,
   isDayMatch,
   nextDayMatch,
+  parseDuration,
 } from '../utils/time.js';
 import { logger } from '../utils/logger.js';
 import { notifyTaskExecution } from './notify.js';
-import type { Config, Task, FixedTask, RandomTask, WindowTask, HistoryEntry, ExecutionResult } from '../types.js';
+import type { AppState, Config, Task, FixedTask, RandomTask, WindowTask, HistoryEntry, ExecutionResult } from '../types.js';
 
 const AUTH_RETRY_MAX = 3;
 const AUTH_RETRY_DELAY_MAX_MS = 10_000;
@@ -78,6 +79,22 @@ export class Scheduler {
         case 'window':
           this.scheduleWindow(task);
           break;
+      }
+    }
+
+    // Refinement pass for anchored tasks: if their anchor has already fired
+    // today, override the standard random pick with anchor.lastRun + windowDuration
+    // + 0~5min jitter so the displayed nextRun matches the chained schedule.
+    if (this.config.global.enhancedMode) {
+      for (const task of this.config.tasks) {
+        if (!task.enabled || task.type !== 'random' || !task.anchor) continue;
+        const taskState = this.ensureTaskState(state, task.name);
+        if (taskState.todayRuns > 0) continue;
+        const anchored = await this.pickAnchoredFireTime(task, state);
+        if (anchored) {
+          this.taskFireTimes.set(task.name, anchored);
+          taskState.nextRun = anchored.toISOString();
+        }
       }
     }
 
@@ -222,7 +239,7 @@ export class Scheduler {
     const { start } = parseTimeRange(task.timeRange);
     const cron = `${start.m} ${start.h} * * ${this.daysToCronDow(task.days)}`;
     const openJob = schedule.scheduleJob(stateKey, cron, () => {
-      this.startWindowPolling(task);
+      void this.startWindowPolling(task);
     });
     if (openJob) this.jobs.set(stateKey, openJob);
 
@@ -238,22 +255,24 @@ export class Scheduler {
     // start polling right now instead of waiting for tomorrow's cron.
     const now = new Date();
     if (todayRuns === 0 && isDayMatch(now, task.days) && isInTimeRange(now, task.timeRange)) {
-      this.startWindowPolling(task);
+      void this.startWindowPolling(task);
     }
 
     return plannedT;
   }
 
-  private startWindowPolling(task: RandomTask): void {
+  private async startWindowPolling(task: RandomTask): Promise<void> {
     this.clearEnhancedPoll(task.name);
 
     // Decide the "fire after this time":
     //  - PLANNED (cron fired close to windowStart = Mac was awake): honor the
     //    pre-picked T from install/last-fire so the displayed nextRun matches
-    //    the actual fire time.
+    //    the actual fire time. For anchored tasks, recompute now that we're
+    //    inside the window — the anchor's lastRun is fresh.
     //  - WAKE (cron fired noticeably late = catch-up after sleep, or daemon
     //    just started mid-window): the pre-picked T is no longer meaningful;
-    //    fire ASAP (1-5s jitter applied by the tick).
+    //    fire ASAP (1-5s jitter applied by the tick). Anchor logic is bypassed
+    //    so wake-up always wins, matching the "下一次醒了就直接执行" intent.
     const now = new Date();
     const { start } = parseTimeRange(task.timeRange);
     const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
@@ -261,19 +280,33 @@ export class Scheduler {
 
     let fireAfter: Date;
     if (lateMs < PLANNED_TRIGGER_THRESHOLD_MS) {
-      // Planned mode: use the pre-picked T (set at install / persistNextRun).
-      // Fall back to a fresh pick if for some reason it's missing or stale.
-      const planned = this.taskFireTimes.get(task.name);
-      const todayWindowEnd = this.todayWindowEnd(task);
-      if (planned && planned.getTime() <= todayWindowEnd.getTime() && planned.getTime() >= windowStart.getTime()) {
-        fireAfter = planned;
-      } else {
-        fireAfter = this.pickPlannedFireTime(task, false);
-        this.taskFireTimes.set(task.name, fireAfter);
-        // Also persist so display matches
-        this.persistNextRun(task.name, fireAfter);
+      // Planned mode. Try anchor first (if applicable), else pre-picked T.
+      let resolved: Date | null = null;
+
+      if (task.anchor) {
+        const anchored = await this.pickAnchoredFireTime(task);
+        if (anchored) {
+          resolved = anchored;
+          this.taskFireTimes.set(task.name, anchored);
+          this.persistNextRun(task.name, anchored);
+          void logger.info(`PLAN  ${task.name} ← ${task.anchor} → fire scheduled ~${dayjs(anchored).format('HH:mm:ss')}`);
+        }
       }
-      void logger.info(`PLAN  ${task.name} — Mac awake at windowStart, fire scheduled ~${dayjs(fireAfter).format('HH:mm:ss')}`);
+
+      if (!resolved) {
+        const planned = this.taskFireTimes.get(task.name);
+        const todayWindowEnd = this.todayWindowEnd(task);
+        if (planned && planned.getTime() <= todayWindowEnd.getTime() && planned.getTime() >= windowStart.getTime()) {
+          resolved = planned;
+        } else {
+          resolved = this.pickPlannedFireTime(task, false);
+          this.taskFireTimes.set(task.name, resolved);
+          this.persistNextRun(task.name, resolved);
+        }
+        void logger.info(`PLAN  ${task.name} — Mac awake at windowStart, fire scheduled ~${dayjs(resolved).format('HH:mm:ss')}`);
+      }
+
+      fireAfter = resolved;
     } else {
       // Catch-up mode: cron fired late, the planned T is in the past.
       fireAfter = now;
@@ -294,7 +327,10 @@ export class Scheduler {
   /** Pick a random fire time within the next applicable window for display + planning. */
   private pickPlannedFireTime(task: RandomTask, alreadyRanToday: boolean): Date {
     const now = new Date();
-    const { start, end } = parseTimeRange(task.timeRange);
+    // The deterministic pick uses tightFireWindow if set (e.g. "07:00-07:05");
+    // wake-induced catch-up still uses the wider task.timeRange.
+    const fireRange = task.tightFireWindow ?? task.timeRange;
+    const { start, end } = parseTimeRange(fireRange);
 
     if (!alreadyRanToday && isDayMatch(now, task.days)) {
       const ws = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
@@ -302,7 +338,9 @@ export class Scheduler {
       if (we.getTime() > now.getTime()) {
         const effectiveStart = Math.max(ws.getTime(), now.getTime());
         const remaining = we.getTime() - effectiveStart;
-        return new Date(effectiveStart + Math.floor(Math.random() * remaining));
+        if (remaining > 0) {
+          return new Date(effectiveStart + Math.floor(Math.random() * remaining));
+        }
       }
     }
 
@@ -310,6 +348,37 @@ export class Scheduler {
     const ws = new Date(nextDay.getFullYear(), nextDay.getMonth(), nextDay.getDate(), start.h, start.m);
     const rangeMs = ((end.h * 60 + end.m) - (start.h * 60 + start.m)) * 60_000;
     return new Date(ws.getTime() + Math.floor(Math.random() * rangeMs));
+  }
+
+  /**
+   * For tasks with `anchor`: target = anchor.lastRun + windowDuration + random(0..5min),
+   * clamped to today's `timeRange`. Returns null if the anchor hasn't fired today,
+   * the day doesn't match, or the chained target overflows past today's window end
+   * (caller falls back to the standard pick in that case).
+   */
+  private async pickAnchoredFireTime(task: RandomTask, preloadedState?: AppState): Promise<Date | null> {
+    if (!task.anchor) return null;
+
+    const now = new Date();
+    if (!isDayMatch(now, task.days)) return null;
+
+    const state = preloadedState ?? await loadState();
+    const anchorRecord = state.tasks[task.anchor];
+    if (!anchorRecord?.lastRun) return null;
+
+    const lastRun = new Date(anchorRecord.lastRun);
+    if (dayjs(lastRun).format('YYYY-MM-DD') !== dayjs(now).format('YYYY-MM-DD')) return null;
+
+    const baseGapMs = parseDuration(this.config.global.windowDuration);
+    const jitterMs = Math.floor(Math.random() * 5 * 60 * 1000);
+    const targetMs = lastRun.getTime() + baseGapMs + jitterMs;
+
+    const { start, end } = parseTimeRange(task.timeRange);
+    const ws = new Date(now.getFullYear(), now.getMonth(), now.getDate(), start.h, start.m);
+    const we = new Date(now.getFullYear(), now.getMonth(), now.getDate(), end.h, end.m);
+
+    if (targetMs >= we.getTime()) return null;
+    return new Date(Math.max(targetMs, ws.getTime()));
   }
 
   private todayWindowEnd(task: RandomTask): Date {
@@ -378,11 +447,24 @@ export class Scheduler {
       if ((stateAfterJitter.tasks[task.name]?.todayRuns ?? 0) > 0) return;
 
       await this.execute(task);
-      // Pre-pick tomorrow's T and use it as the new nextRun (so display
-      // immediately shows an exact preset time for the next run).
+      // Pre-pick tomorrow's T for this task AND, in the same atomic write,
+      // recompute any downstream anchored tasks' nextRun (e.g., morning's
+      // fire updates noon's planned T to fresh anchor + 5h + jitter so the
+      // CLI display matches the actual schedule immediately).
+      const postState = await loadState();
       const nextT = this.pickPlannedFireTime(task, true);
       this.taskFireTimes.set(task.name, nextT);
-      this.persistNextRun(task.name, nextT);
+      this.ensureTaskState(postState, task.name).nextRun = nextT.toISOString();
+      for (const dep of this.config.tasks) {
+        if (dep.type !== 'random' || !dep.enabled || dep.anchor !== task.name) continue;
+        if ((postState.tasks[dep.name]?.todayRuns ?? 0) > 0) continue;
+        const anchored = await this.pickAnchoredFireTime(dep, postState);
+        if (anchored) {
+          this.taskFireTimes.set(dep.name, anchored);
+          this.ensureTaskState(postState, dep.name).nextRun = anchored.toISOString();
+        }
+      }
+      await saveState(postState);
       // Successful fire: stop polling until next windowStart cron reopens it.
       this.clearEnhancedPoll(task.name);
     } finally {
